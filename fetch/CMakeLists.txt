@@ -153,6 +153,22 @@ include_directories(
 #   ${catkin_LIBRARIES}
 # )
 
+add_executable(foot_motion src/foot_motion.cpp)
+add_dependencies(foot_motion ${PROJECT_NAME}_generate_messages_cpp)
+target_link_libraries(foot_motion ${catkin_LIBRARIES})
+
+add_executable(gait_control src/gait_control.cpp)
+add_dependencies(gait_control ${PROJECT_NAME}_generate_messages_cpp)
+target_link_libraries(gait_control ${catkin_LIBRARIES})
+
+add_executable(leg_mapping src/leg_mapping.cpp)
+add_dependencies(leg_mapping ${PROJECT_NAME}_generate_messages_cpp)
+target_link_libraries(leg_mapping ${catkin_LIBRARIES})
+
+add_executable(orientation_control src/orientation_control.cpp)
+add_dependencies(orientation_control ${PROJECT_NAME}_generate_messages_cpp)
+target_link_libraries(orientation_control ${catkin_LIBRARIES})
+
 #############
 ## Install ##
 #############
