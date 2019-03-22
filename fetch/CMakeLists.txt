@@ -155,7 +155,7 @@ include_directories(
 
 add_executable(foot_motion src/foot_motion.cpp)
 add_dependencies(foot_motion ${PROJECT_NAME}_generate_messages_cpp)
-target_link_libraries(foot_motion ${catkin_LIBRARIES})
+target_link_libraries(foot_motion ${catkin_LIBRARIES} robotcontrol)
 
 add_executable(gait_control src/gait_control.cpp)
 add_dependencies(gait_control ${PROJECT_NAME}_generate_messages_cpp)

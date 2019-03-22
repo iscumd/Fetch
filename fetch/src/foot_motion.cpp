@@ -52,7 +52,7 @@ int main(int argc, char **argv){
 	ros::NodeHandle n;
 
 	n.param("foot_motion_enable_logging", enableLogging, false);
-	n.param("foot_motion_use_onboard_power", useOnBoardPower, false);
+	n.param("foot_motion_use_onboard_power", useOnboardPower, false);
 	n.param("foot_motion_pulse_frequency", frequency_hz, 50);
 
 	// ros::Subscriber joystickSub = n.subscribe("joystick/xinput", 5, joystickCallback);
