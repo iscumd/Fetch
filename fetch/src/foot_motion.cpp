@@ -10,7 +10,7 @@
 bool enableLogging;
 bool useOnboardPower;
 int frequency_hz; //frequency to send pulses
-float pulse_width_ms;
+float pulse_width_ms = 1.5;
 
 int board_init(){
 	if (useOnboardPower) {
