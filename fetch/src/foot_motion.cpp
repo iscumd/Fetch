@@ -1,7 +1,7 @@
 #include "ros/ros.h"
+#include "std_msgs/Float32.h"
 
 #include <string>
-// #include <stdlib.h> // for atoi
 
 #include <rc/adc.h>
 #include <rc/servo.h>
@@ -10,6 +10,7 @@
 bool enableLogging;
 bool useOnboardPower;
 int frequency_hz; //frequency to send pulses
+float pulse_width_ms;
 
 int board_init(){
 	if (useOnboardPower) {
@@ -36,14 +37,18 @@ int board_init(){
 }
 
 //0 = all channels
-int move_servo(int channel, float width_ms){
-	int width_us = width_ms * 1000;
-	if(width_us<10){
+int move_servo(int channel, float pulse_width_ms){
+	int pulse_width_us = pulse_width_ms * 1000;
+	if(pulse_width_us<10){
 			ROS_ERROR("Width in microseconds must be >10");
 			return -1;
 	}
-	if(rc_servo_send_pulse_us(channel, width_us)==-1) return -1;
+	if(rc_servo_send_pulse_us(channel, pulse_width_us)==-1) return -1;
 	return 0;
+}
+
+void pulseWidthCallback(const std_msgs::Float32::ConstPtr& msg){
+	pulse_width_ms = msg->data;
 }
 
 int main(int argc, char **argv){
@@ -55,7 +60,7 @@ int main(int argc, char **argv){
 	n.param("foot_motion_use_onboard_power", useOnboardPower, false);
 	n.param("foot_motion_pulse_frequency", frequency_hz, 50);
 
-	// ros::Subscriber joystickSub = n.subscribe("joystick/xinput", 5, joystickCallback);
+	ros::Subscriber pulseWidthSub = n.subscribe("foot/pulse_width_ms", 5, pulseWidthCallback);
 
 	if(board_init()) return -1;
 
@@ -63,19 +68,7 @@ int main(int argc, char **argv){
 	while(ros::ok()) {
 		ros::spinOnce();
 		
-		move_servo(0, 0.9);
-
-		loopRate.sleep();
-		
-		move_servo(0, 1.5);
-
-		loopRate.sleep();
-		
-		move_servo(0, 2.1);
-
-		loopRate.sleep();
-		
-		move_servo(0, 1.5);
+		move_servo(0, pulse_width_ms);
 
 		loopRate.sleep();
 	}
