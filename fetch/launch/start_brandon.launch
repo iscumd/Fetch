@@ -1,0 +1,27 @@
+<launch>
+	<arg name="joy_dev" default="/dev/input/js0" />
+	<arg name="mapping_file" default="xbox360_mapping.yaml" />
+	<arg name="enable_logging" default="false" />
+	<arg name="speed_multiplier" default="1.0" />
+	<arg name="turn_multiplier" default="0.5" />
+	
+	<!-- joy node -->
+	<node pkg="joy" type="joy_node" name="joy_node">
+		<param name="dev" value="$(arg joy_dev)" />
+	</node>
+
+	<!-- xinput node -->
+	<node pkg="isc_joy" type="joystick_xbox360" name="joystick_xbox360">
+		<rosparam command="load" file="$(find isc_joy)/mappings/$(arg mapping_file)" />
+	</node>
+
+	<!-- manual control node -->
+	<param name="manual_control_speed_multiplier" value="$(arg speed_multiplier)" />
+	<param name="manual_control_turn_multiplier" value="$(arg turn_multiplier)" />
+	<node pkg="isc_joy" type="manual_control" name="manual_control" />
+
+    <!-- foot_motion -->
+    <!-- turn on onboard power for testing with smaller servo -->
+	<param name="foot_motion_use_onboard_power" value="true" /> 
+    <node pkg="fetch" type="foot_motion" name="foot_motion" launch-prefix="sudo"/>
+</launch>
