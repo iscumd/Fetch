@@ -1,24 +1,11 @@
 #include "ros/ros.h"
-#include "geometry_msgs/Quaternion.h"
-
-#include <string>
-
-ros::Publisher footPub;
-
-bool enableLogging;
 
 int main(int argc, char **argv){
 	ros::init(argc, argv, "foot_motion");
 
 	ros::NodeHandle n;
 
-	n.param("foot_motion_enable_logging", enableLogging, false);
-
-	footPub = n.advertise<geometry_msgs::Quaternion>("foot_motion", 5);
-
-	// ros::Subscriber joystickSub = n.subscribe("joystick/xinput", 5, joystickCallback);
-
-	ros::spin();
+	ROS_WARN("The Robot Control Library is only installed on the BeagleBone, so this node will remain empty in this branch so that we can build and test on our own machines without that library. This node will now exit.");
 
 	return 0;
 }
