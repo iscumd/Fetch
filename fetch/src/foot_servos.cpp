@@ -63,7 +63,7 @@ void pulseWidthCallback(const std_msgs::Float32MultiArray::ConstPtr& msg){
 			ROS_ERROR("More servo motor angles sent than channels available. Truncating message read at %i channels.", number_of_channels);
 			return;
 		}
-		pulse_width_ms.push_back(*it);
+		pulse_width_ms.at(i) = *it;
 		i++;
 	}
 }
