@@ -157,6 +157,10 @@ add_executable(foot_servos src/foot_servos.cpp)
 add_dependencies(foot_servos ${PROJECT_NAME}_generate_messages_cpp)
 target_link_libraries(foot_servos ${catkin_LIBRARIES})
 
+add_executable(foot_switches src/foot_switches.cpp)
+add_dependencies(foot_switches ${PROJECT_NAME}_generate_messages_cpp)
+target_link_libraries(foot_switches ${catkin_LIBRARIES})
+
 add_executable(gait_control src/gait_control.cpp)
 add_dependencies(gait_control ${PROJECT_NAME}_generate_messages_cpp)
 target_link_libraries(gait_control ${catkin_LIBRARIES})
