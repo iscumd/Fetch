@@ -20,6 +20,9 @@
 	<param name="manual_control_turn_multiplier" value="$(arg turn_multiplier)" />
 	<node pkg="isc_joy" type="manual_control" name="manual_control" />
 
+    <!-- foot_switches --> 
+    <node pkg="fetch" type="foot_switches" name="foot_switches" output="screen"/>
+
     <!-- foot_servos -->
     <!-- turn on onboard power for testing with smaller servo -->
 	<param name="foot_servos_use_onboard_power" value="true" /> 
