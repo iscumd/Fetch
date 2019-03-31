@@ -27,5 +27,5 @@
     <!-- PRU memory needs to be accessed directly, so root is needed. See https://github.com/StrawsonDesign/librobotcontrol/issues/132 -->
     <!-- Environment variables must be preserved or $ROS_MASTER_URI is not set. See https://answers.ros.org/question/165246/launch-node-with-root-permissions/?answer=165386#post-id-165386 and suforeman comment-->
     <!-- Passwordless sudo must also be set up. Run `sudo visudo` and add `debian ALL=(ALL) NOPASSWD: ALL` to the end of the file. See https://serverfault.com/a/596988 -->
-    <node pkg="fetch" type="foot_motion" name="foot_motion" launch-prefix="sudo -E"/>
+    <node pkg="fetch" type="foot_servos" name="foot_servos" launch-prefix="sudo -E"/>
 </launch>
