@@ -1,7 +1,7 @@
 #include "ros/ros.h"
 
 int main(int argc, char **argv){
-	ros::init(argc, argv, "foot_motion");
+	ros::init(argc, argv, "foot_servos");
 
 	ros::NodeHandle n;
 
