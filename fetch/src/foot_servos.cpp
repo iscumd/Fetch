@@ -73,9 +73,9 @@ int main(int argc, char **argv){
 
 	ros::NodeHandle n;
 
-	n.param("foot_motion_enable_logging", enableLogging, false);
-	n.param("foot_motion_use_onboard_power", useOnboardPower, false);
-	n.param("foot_motion_pulse_frequency", frequency_hz, 50);
+	n.param("foot_servos_enable_logging", enableLogging, false);
+	n.param("foot_servos_use_onboard_power", useOnboardPower, false);
+	n.param("foot_servos_pulse_frequency", frequency_hz, 50);
 
 	for(int i = 0; i < number_of_channels; i++){
 		pulse_width_ms.push_back(default_pulse_width);
