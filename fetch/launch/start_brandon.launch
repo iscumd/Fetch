@@ -21,5 +21,5 @@
 	<node pkg="isc_joy" type="manual_control" name="manual_control" />
 
     <!-- foot_motion --> 
-    <node pkg="fetch" type="foot_motion" name="foot_motion" output="screen"/>
+    <node pkg="fetch" type="foot_servos" name="foot_servos" output="screen"/>
 </launch>
