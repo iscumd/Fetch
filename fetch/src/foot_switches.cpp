@@ -91,10 +91,11 @@ int main(int argc, char **argv){
 
 	if(board_init()) return -1;
 
-	// initilize buttons as pressed
-	for(int i = 0; i < 4; i++){
-		buttons.push_back(1);
-	}
+	// // initilize buttons
+	buttons.push_back(rc_button_get_state(BUTTON_PIN_FRONT_LEFT));
+	buttons.push_back(rc_button_get_state(BUTTON_PIN_FRONT_RIGHT));
+	buttons.push_back(rc_button_get_state(BUTTON_PIN_BACK_LEFT));
+	buttons.push_back(rc_button_get_state(BUTTON_PIN_BACK_RIGHT));
 	
 	rc_button_set_callbacks(BUTTON_PIN_FRONT_LEFT, __on_front_left_press, __on_front_left_release);
 	rc_button_set_callbacks(BUTTON_PIN_FRONT_RIGHT, __on_front_right_press, __on_front_right_release);
