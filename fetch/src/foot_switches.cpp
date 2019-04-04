@@ -91,7 +91,11 @@ int main(int argc, char **argv){
 
 	if(board_init()) return -1;
 
-	// initilize buttons' state
+	// initialize buttons array
+	for(int i = 0; i < 4; i++){
+		buttons.push_back(1);
+	}
+	// initialize buttons' state
 	button0_volatile = rc_button_get_state(BUTTON_PIN_FRONT_LEFT);
 	button1_volatile = rc_button_get_state(BUTTON_PIN_FRONT_RIGHT);
 	button2_volatile = rc_button_get_state(BUTTON_PIN_BACK_LEFT);
