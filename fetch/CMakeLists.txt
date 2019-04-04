@@ -171,9 +171,9 @@ add_executable(leg_mapping src/leg_mapping.cpp)
 add_dependencies(leg_mapping ${PROJECT_NAME}_generate_messages_cpp)
 target_link_libraries(leg_mapping ${catkin_LIBRARIES})
 
-add_executable(orientation_control src/orientation_control.cpp)
-add_dependencies(orientation_control ${PROJECT_NAME}_generate_messages_cpp)
-target_link_libraries(orientation_control ${catkin_LIBRARIES})
+# add_executable(orientation_control src/orientation_control.cpp)
+# add_dependencies(orientation_control ${PROJECT_NAME}_generate_messages_cpp)
+# target_link_libraries(orientation_control ${catkin_LIBRARIES})
 
 #############
 ## Install ##
