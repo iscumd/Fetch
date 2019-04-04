@@ -34,10 +34,10 @@ int board_init(){
 }
 
 void publish_message(){
-	button0_volatile = buttons.at(0);
-	button1_volatile = buttons.at(1);
-	button2_volatile = buttons.at(2);
-	button3_volatile = buttons.at(3);
+	buttons.at(0) = button0_volatile;
+	buttons.at(1) = button1_volatile;
+	buttons.at(2) = button2_volatile;
+	buttons.at(3) = button3_volatile;
 	std_msgs::UInt8MultiArray msg;
 	msg.data = buttons;
 	pub.publish(msg);
@@ -93,7 +93,7 @@ int main(int argc, char **argv){
 
 	// initialize buttons array
 	for(int i = 0; i < 4; i++){
-		buttons.push_back(1);
+		buttons.push_back(-1);
 	}
 	// initialize buttons' state
 	button0_volatile = rc_button_get_state(BUTTON_PIN_FRONT_LEFT);
