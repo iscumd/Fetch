@@ -24,8 +24,8 @@
 bool enableLogging;
 
 class stabMargin{
-	float plus, minus;
 public:
+	float plus, minus;
 	float min(void){
 		if(abs(plus) > abs(minus)) {
 			return abs(plus);
