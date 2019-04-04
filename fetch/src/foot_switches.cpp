@@ -15,67 +15,61 @@
 
 bool enableLogging;
 int frequency_hz = 0.5;
-static std::vector<uint8_t> buttons;
-static ros::Publisher pub;
+std::vector<uint8_t> buttons;
+static std::vector<uint8_t> buttons_volitile;
+ros::Publisher pub;
 
 int board_init(){
 	if(rc_button_init(BUTTON_PIN_FRONT_LEFT, RC_BTN_POLARITY_NORM_LOW, RC_BTN_DEBOUNCE_DEFAULT_US)
 		|| rc_button_init(BUTTON_PIN_FRONT_RIGHT, RC_BTN_POLARITY_NORM_LOW, RC_BTN_DEBOUNCE_DEFAULT_US)
 		|| rc_button_init(BUTTON_PIN_BACK_LEFT, RC_BTN_POLARITY_NORM_LOW, RC_BTN_DEBOUNCE_DEFAULT_US)
 		|| rc_button_init(BUTTON_PIN_BACK_RIGHT, RC_BTN_POLARITY_NORM_LOW, RC_BTN_DEBOUNCE_DEFAULT_US)){
-			ROS_ERROR("Failed to init buttons.");
+			ROS_ERROR("Failed to initialize buttons.");
 			return -1;
 	}
 	return 0;
 }
 
-static void publish_message(){
+void publish_message(){
+	buttons = buttons_volitile;
 	std_msgs::UInt8MultiArray msg;
 	msg.data = buttons;
 	pub.publish(msg);
 }
 
 static void __on_front_left_press(void){
-	buttons.at(0) = 1;
-	publish_message();
+	buttons_volitile.at(0) = 1;
 	return;
 }
 static void __on_front_left_release(void){
-	buttons.at(0) = 0;
-	publish_message();
+	buttons_volitile.at(0) = 0;
 	return;
 }
 
 static void __on_front_right_press(void){
-	buttons.at(1) = 1;
-	publish_message();
+	buttons_volitile.at(1) = 1;
 	return;
 }
 static void __on_front_right_release(void){
-	buttons.at(1) = 0;
-	publish_message();
+	buttons_volitile.at(1) = 0;
 	return;
 }
 
 static void __on_back_left_press(void){
-	buttons.at(2) = 1;
-	publish_message();
+	buttons_volitile.at(2) = 1;
 	return;
 }
 static void __on_back_left_release(void){
-	buttons.at(2) = 0;
-	publish_message();
+	buttons_volitile.at(2) = 0;
 	return;
 }
 
 static void __on_back_right_press(void){
-	buttons.at(3) = 1;
-	publish_message();
+	buttons_volitile.at(3) = 1;
 	return;
 }
 static void __on_back_right_release(void){
-	buttons.at(3) = 0;
-	publish_message();
+	buttons_volitile.at(3) = 0;
 	return;
 }
 
@@ -91,10 +85,13 @@ int main(int argc, char **argv){
 
 	if(board_init()) return -1;
 
-	// initilize buttons as pressed
-	for(int i = 0; i < 4; i++){
-		buttons.push_back(1);
-	}
+	// initilize buttons' state
+	buttons_volitile.push_back(rc_button_get_state(BUTTON_PIN_FRONT_LEFT));
+	buttons_volitile.push_back(rc_button_get_state(BUTTON_PIN_FRONT_RIGHT));
+	buttons_volitile.push_back(rc_button_get_state(BUTTON_PIN_BACK_LEFT));
+	buttons_volitile.push_back(rc_button_get_state(BUTTON_PIN_BACK_RIGHT));
+	publish_message();
+	ros::spinOnce();
 	
 	rc_button_set_callbacks(BUTTON_PIN_FRONT_LEFT, __on_front_left_press, __on_front_left_release);
 	rc_button_set_callbacks(BUTTON_PIN_FRONT_RIGHT, __on_front_right_press, __on_front_right_release);
@@ -103,6 +100,9 @@ int main(int argc, char **argv){
 
 	// ros::Rate loopRate(frequency_hz);
 	while(ros::ok()) {
+		if(buttons_volitile != buttons){
+			publish_message();
+		}
 		ros::spinOnce();
 		rc_usleep(frequency_hz*1000000);
 		// loopRate.sleep();
