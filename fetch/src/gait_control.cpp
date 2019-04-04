@@ -34,12 +34,22 @@ public:
 };
 
 class robot{
-	public:
+public:
 	std_msgs::UInt8MultiArray footSwitch;
 	geometry_msgs::Polygon footPosition;
 	geometry_msgs::Quaternion orientation;
+	
 	fetch::RhoThetaQArray rtq;
 	float deltaRho[];
+	
+	stabMargin stability(){return stabilityCalc(footPosition, footSwitch, -1);};
+	
+	static stabMargin stabilityCalc(geometry_msgs::Polygon footPositions, std_msgs::UInt8MultiArray footSw, int testLeg){
+		stabMargin S;
+		S.plus = 1;
+		S.minus = -2;
+		return S;
+	};
 };
 
 robot brandon;
@@ -54,9 +64,9 @@ void switchCallback(const std_msgs::UInt8MultiArray::ConstPtr& switchCallback){
 
 void footCallback(const geometry_msgs::Polygon::ConstPtr& footCallback){
 	// current foot positions
-	// footPos.points[i].x
-	// footPos.points[i].y
-	// footPos.points[i].z
+	// brandon.footPosition.points[i].x
+	// brandon.footPosition.points[i].y
+	// brandon.footPosition.points[i].z
 	brandon.footPosition = *footCallback;
 }
 
@@ -70,9 +80,14 @@ void orientationControlCallback(const geometry_msgs::Quaternion::ConstPtr& orien
 
 // ---------- Functions ----------
 
-stabMargin stabilityCalc(geometry_msgs::Polygon footPositions, std_msgs::UInt8MultiArray footSw, int testLeg){
-	
-}
+
+/* void swing(int leg){
+
+}*/
+
+/* void stride(int leg){
+
+}*/
 
 // ------------- Main ------------
 
@@ -105,7 +120,7 @@ int main(int argc, char **argv){
 
 		gaitPub.publish(brandon.rtq);
 
-        // The thing is, Bob, it's not that I'm lazy, it's that I just don't care. 
+        // The thing is, Bob, it's not that I'm lazy, it's that I just don't care.
 		loop_rate.sleep();
 	}
 
