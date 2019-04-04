@@ -25,7 +25,6 @@ bool enableLogging;
 
 void rtqCallback(const fetch::RhoThetaQArray::ConstPtr& rtqCallback)
 {
-
 	geometry_msgs::Polygon footPoint;			// point output
 	std_msgs::Float32MultiArray servoAngle;		// angle output
 

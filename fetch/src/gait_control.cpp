@@ -1,5 +1,6 @@
 #include "ros/ros.h"
 #include "geometry_msgs/Quaternion.h"
+#include "fetch/RhoThetaQArray.h"
 
 #include <string>
 
@@ -14,7 +15,7 @@ int main(int argc, char **argv){
 
 	n.param("gait_control_enable_logging", enableLogging, false);
 
-	gaitPub = n.advertise<geometry_msgs::Quaternion>("gait_control", 5);
+	gaitPub = n.advertise<fetch::RhoThetaQArray>("gait_control", 5);
 
 	// ros::Subscriber joystickSub = n.subscribe("joystick/xinput", 5, joystickCallback);
 
