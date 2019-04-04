@@ -66,6 +66,8 @@ void orientationControlCallback(const geometry_msgs::Quaternion::ConstPtr& orien
 	//Roll should be no greater than 
 	brandon.orientation = *orientCallback;
 	
+	if(brandon.orientation.x >)
+
 }	
 
 // ---------- Functions ----------
