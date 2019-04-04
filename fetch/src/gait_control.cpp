@@ -11,17 +11,15 @@
 
 // -------- ROS Specific ---------
 
-ros::Publisher gaitPub;
-ros::Subscriber eulerSub;
-
-std_msgs::UInt8MultiArray footSwitch;
-geometry_msgs::Polygon footPos;
-geometry_msgs::Quaternion orient;
+//fetch::RhoThetaQArray rtq;
+//std_msgs::UInt8MultiArray footSwitch;
+//geometry_msgs::Polygon footPos;
+//geometry_msgs::Quaternion orient;
 
 // ---- Variables and Classes ----
 
 // static rc_mpu_data_t data;
-// float32<vector> deltaRho = 0; 
+// float32<vector> deltaRho = 0;
 
 bool enableLogging;
 
@@ -35,22 +33,38 @@ public:
 	}
 };
 
+class robot{
+	public:
+	std_msgs::UInt8MultiArray footSwitch;
+	geometry_msgs::Polygon footPosition;
+	geometry_msgs::Quaternion orientation;
+	fetch::RhoThetaQArray rtq;
+	float deltaRho[];
+};
+
+robot brandon;
+
 // ----- Callback Functions ------
 
-void switchCallback(const std_msgs::UInt8MultiArray::ConstPtr& switchCallback)
-{
-	footSwitch = *switchCallback;	// switch state input
+void switchCallback(const std_msgs::UInt8MultiArray::ConstPtr& switchCallback){
+	// current foot switch states
+	// add format of multiarray for ease-of-use
+	brandon.footSwitch = *switchCallback;	// switch state input
 }
 
 void footCallback(const geometry_msgs::Polygon::ConstPtr& footCallback){
-	footPos = *footCallback;		// current foot positions
+	// current foot positions
+	// footPos.points[i].x
+	// footPos.points[i].y
+	// footPos.points[i].z
+	brandon.footPosition = *footCallback;
 }
 
 void orientationControlCallback(const geometry_msgs::Quaternion::ConstPtr& orientCallback){
 	//Message reads in Pitch, Roll, Yaw(msg->data.x, msg->data.y, msg->data.z respectively)
 	//Pitch should be no greater than |30 degrees| (absolute value)
 	//Roll should be no greater than 
-	orient = *orientCallback;
+	brandon.orientation = *orientCallback;
 	
 }	
 
@@ -63,21 +77,37 @@ stabMargin stabilityCalc(geometry_msgs::Polygon footPositions, std_msgs::UInt8Mu
 // ------------- Main ------------
 
 int main(int argc, char **argv){
+	
+	// define name of node and start
 	ros::init(argc, argv, "gait_control");
-
+    
+	// The first nodehandle constructed will fully initialize this node
 	ros::NodeHandle n;
+    
+	// specify loop frequency, works with Rate::sleep to sleep for the correct time
+    ros::Rate loop_rate(20);
 
+	// get ros params
 	n.param("gait_control_enable_logging", enableLogging, false);
-
-	gaitPub = n.advertise<fetch::RhoThetaQArray>("gait_control", 5);
-
-	//ros::Subscriber joystickSub = n.subscribe("joystick/xinput", 5, joystickCallback);
+    
+	// define topic name to publish to and queue size
+	ros::Publisher gaitPub = n.advertise<fetch::RhoThetaQArray>("gait_control", 5);
+    
+	// define topic names to subscribe to and queue size
 	ros::Subscriber switchSub = n.subscribe("foot_switches", 5, switchCallback);
 	ros::Subscriber footSub = n.subscribe("foot_position", 5, footCallback);
-	
-	eulerSub = n.subscribe("orientation_control", 5, orientationControlCallback);
-	
-	ros::spin();
+	ros::Subscriber eulerSub = n.subscribe("orientation_control", 5, orientationControlCallback);
+	//ros::Subscriber joystickSub = n.subscribe("joystick/xinput", 5, joystickCallback);
+
+	while(ros::ok()){
+		ros::spinOnce();
+
+
+		gaitPub.publish(brandon.rtq);
+
+        // The thing is, Bob, it's not that I'm lazy, it's that I just don't care. 
+		loop_rate.sleep();
+	}
 
 	return 0;
 }
