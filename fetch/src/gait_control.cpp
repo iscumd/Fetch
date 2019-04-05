@@ -22,6 +22,8 @@
 // float32<vector> deltaRho = 0;
 
 bool enableLogging;
+double leftRollThresh, rightRollThresh, forwardPitchThresh;
+double backwardPitchThresh;
 
 class stabMargin{
 public:
@@ -71,13 +73,42 @@ void footCallback(const geometry_msgs::Polygon::ConstPtr& footCallback){
 }
 
 void orientationControlCallback(const geometry_msgs::Quaternion::ConstPtr& orientCallback){
+	
+	
 	//Message reads in Pitch, Roll, Yaw(msg->data.x, msg->data.y, msg->data.z respectively)
 	//Pitch should be no greater than |30 degrees| (absolute value)
 	//Roll should be no greater than 
 	brandon.orientation = *orientCallback;
 	
-	if(brandon.orientation.x >)
+	//Units in cm for deltaRho
+	//Will adjust the deltaRho offsets for each leg based on the offset data to adjust balance
+	if(brandon.orientation.x > forwardPitchThresh){
+		brandon.deltaRho[0]--;
+		brandon.deltaRho[1]--;
+		brandon.deltaRho[2]++;
+		brandon.deltaRho[3]++;
+	}
 
+	if(brandon.orientation.x < backwardPitchThresh){
+		brandon.deltaRho[0]++;
+		brandon.deltaRho[1]++;
+		brandon.deltaRho[2]--;
+		brandon.deltaRho[3]--;
+	}
+
+	if(brandon.orientation.y < leftRollThresh){
+		brandon.deltaRho[0]--;
+		brandon.deltaRho[2]--;
+		brandon.deltaRho[1]++;
+		brandon.deltaRho[3]++;
+	}
+
+	if(brandon.orientation.y > rightRollThresh){
+		brandon.deltaRho[0]++;
+		brandon.deltaRho[2]++;
+		brandon.deltaRho[1]--;
+		brandon.deltaRho[3]--;
+	}
 }	
 
 // ---------- Functions ----------
@@ -106,7 +137,14 @@ int main(int argc, char **argv){
 
 	// get ros params
 	n.param("gait_control_enable_logging", enableLogging, false);
-    
+   
+    //Pitch and Roll Thresholds.
+	n.param("left_roll_threshold", leftRollThresh, -30.0);
+	n.param("right_roll_threshold", rightRollThresh, 30.0);
+	n.param("forward_pitch_threshold", forwardPitchThresh, 30.0);
+	n.param("backward_pitch_threshold", backwardPitchThresh, -30.0);
+	
+
 	// define topic name to publish to and queue size
 	ros::Publisher gaitPub = n.advertise<fetch::RhoThetaQArray>("gait_control", 5);
     
