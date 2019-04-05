@@ -47,9 +47,31 @@ public:
 	stabMargin stability(){return stabilityCalc(footPosition, footSwitch, -1);};
 	
 	static stabMargin stabilityCalc(geometry_msgs::Polygon footPositions, std_msgs::UInt8MultiArray footSw, int testLeg){
+		// input foot positions and foot switch states
+		// as well as what leg we are considering raising
+		//
+		// if you want just the current state, set testLeg to -1 in the function call
+
 		stabMargin S;
-		S.plus = 1;
-		S.minus = -2;
+		float sHolder = 0;
+		S.plus = 0;
+		S.minus = 0;
+
+		if(testLeg != -1){
+			footSw.data[testLeg] = 0;
+		}
+
+		for(int i=0;i<3;i++){
+			if(footSw.data[i] != 0 && footSw.data[i+1] != 0){
+				sHolder = (footPositions.points[i].x + footPositions.points[i+1].x) / 2;
+				if(sHolder > S.plus){
+					S.plus = sHolder;
+				}else if(sHolder < S.minus){
+					S.minus = sHolder;
+				}
+			}
+		}
+
 		return S;
 	};
 };
