@@ -14,6 +14,7 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
   sensor_msgs
   std_msgs
+  message_generation
 )
 
 ## System dependencies are found with CMake's conventions
@@ -50,11 +51,10 @@ find_package(catkin REQUIRED COMPONENTS
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
 ## Generate messages in the 'msg' folder
-# add_message_files(
-#   FILES
-#   Message1.msg
-#   Message2.msg
-# )
+add_message_files(
+  FILES
+  RhoThetaQArray.msg
+)
 
 ## Generate services in the 'srv' folder
 # add_service_files(
@@ -71,10 +71,12 @@ find_package(catkin REQUIRED COMPONENTS
 # )
 
 ## Generate added messages and services with any dependencies listed here
-# generate_messages(
-#   DEPENDENCIES
-#   geometry_msgs#   sensor_msgs#   std_msgs
-# )
+generate_messages(
+  DEPENDENCIES
+  geometry_msgs
+  sensor_msgs
+  std_msgs
+)
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -169,9 +171,9 @@ add_executable(leg_mapping src/leg_mapping.cpp)
 add_dependencies(leg_mapping ${PROJECT_NAME}_generate_messages_cpp)
 target_link_libraries(leg_mapping ${catkin_LIBRARIES})
 
-add_executable(orientation_control src/orientation_control.cpp)
-add_dependencies(orientation_control ${PROJECT_NAME}_generate_messages_cpp)
-target_link_libraries(orientation_control ${catkin_LIBRARIES})
+# add_executable(orientation_control src/orientation_control.cpp)
+# add_dependencies(orientation_control ${PROJECT_NAME}_generate_messages_cpp)
+# target_link_libraries(orientation_control ${catkin_LIBRARIES})
 
 #add_executable(imu src/imu.cpp)
 #add_dependencies(imu ${PROJECT_NAME}_generate_messages_cpp)

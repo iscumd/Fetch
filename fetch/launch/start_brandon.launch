@@ -4,6 +4,10 @@
 	<arg name="enable_logging" default="false" />
 	<arg name="speed_multiplier" default="1.0" />
 	<arg name="turn_multiplier" default="0.5" />
+	<arg name="forward_pitch_threshold" default="30.0" />
+	<arg name="backward_pitch_threshold" default="-30.0" />
+	<arg name="left_roll_threshold" default="-30.0" />
+	<arg name="right_roll_threshold" default="30.0" />
 	
 	<!-- joy node -->
 	<node pkg="joy" type="joy_node" name="joy_node">
