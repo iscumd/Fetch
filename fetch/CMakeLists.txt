@@ -176,9 +176,9 @@ target_link_libraries(leg_mapping ${catkin_LIBRARIES})
 # add_dependencies(orientation_control ${PROJECT_NAME}_generate_messages_cpp)
 # target_link_libraries(orientation_control ${catkin_LIBRARIES})
 
-#add_executable(imu src/imu.cpp)
-#add_dependencies(imu ${PROJECT_NAME}_generate_messages_cpp)
-#target_link_libraries(imu ${catkin_LIBRARIES} robotcontrol)
+add_executable(imu src/imu.cpp)
+add_dependencies(imu ${PROJECT_NAME}_generate_messages_cpp)
+target_link_libraries(imu ${catkin_LIBRARIES} robotcontrol)
 
 #############
 ## Install ##
