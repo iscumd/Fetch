@@ -29,9 +29,8 @@ class stabMargin{
 public:
 	float plus, minus;
 	float min(void){
-		if(abs(plus) > abs(minus)) {
-			return abs(plus);
-		}else{ return abs(minus); }
+		if(abs(plus) > abs(minus)) return abs(plus);
+		else return abs(minus); 
 	}
 };
 
@@ -57,21 +56,15 @@ public:
 		S.plus = 0;
 		S.minus = 0;
 
-		if(testLeg != -1){
-			footSw.data[testLeg] = 0;
-		}
+		if(testLeg != -1) footSw.data[testLeg] = 0;
 
 		for(int i=0;i<3;i++){
 			if(footSw.data[i] != 0 && footSw.data[i+1] != 0){
 				sHolder = (footPositions.points[i].x + footPositions.points[i+1].x) / 2;
-				if(sHolder > S.plus){
-					S.plus = sHolder;
-				}else if(sHolder < S.minus){
-					S.minus = sHolder;
-				}
+				if(sHolder > S.plus) S.plus = sHolder;
+				else if(sHolder < S.minus) S.minus = sHolder;
 			}
 		}
-
 		return S;
 	};
 };
