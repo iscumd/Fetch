@@ -2,8 +2,8 @@
 	<arg name="joy_dev" default="/dev/input/js0" />
 	<arg name="mapping_file" default="xbox360_mapping.yaml" />
 	<arg name="enable_logging" default="false" />
-	<arg name="speed_multiplier" default="1.0" />
-	<arg name="turn_multiplier" default="0.5" />
+	<!-- <arg name="speed_multiplier" default="1.0" /> -->
+	<!-- <arg name="turn_multiplier" default="0.5" /> -->
 	<arg name="forward_pitch_threshold" default="30.0" />
 	<arg name="backward_pitch_threshold" default="-30.0" />
 	<arg name="left_roll_threshold" default="-30.0" />
@@ -20,9 +20,9 @@
 	</node>
 
 	<!-- manual control node -->
-	<param name="manual_control_speed_multiplier" value="$(arg speed_multiplier)" />
-	<param name="manual_control_turn_multiplier" value="$(arg turn_multiplier)" />
-	<node pkg="isc_joy" type="manual_control" name="manual_control" />
+	<!-- <param name="manual_control_speed_multiplier" value="$(arg speed_multiplier)" /> -->
+	<!-- <param name="manual_control_turn_multiplier" value="$(arg turn_multiplier)" /> -->
+	<node pkg="fetch" type="manual_control" name="manual_control" />
 
     <!-- foot_switches --> 
     <node pkg="fetch" type="foot_switches" name="foot_switches" output="screen"/>
