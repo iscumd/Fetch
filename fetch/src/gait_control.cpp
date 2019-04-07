@@ -1,6 +1,7 @@
 #include "ros/ros.h"
 #include "geometry_msgs/Quaternion.h"
 #include "geometry_msgs/Polygon.h"
+#include "geometry_msgs/Twist.h"
 #include "fetch/RhoThetaQArray.h"
 #include "std_msgs/UInt8MultiArray.h"
 //#include "rc/mpu.h"
@@ -39,33 +40,31 @@ public:
 	std_msgs::UInt8MultiArray footSwitch;
 	geometry_msgs::Polygon footPosition;
 	geometry_msgs::Quaternion orientation;
+	geometry_msgs::Twist velocity;
 	
 	fetch::RhoThetaQArray rtq;
 	float deltaRho[];
-	
-	stabMargin stability(){return stabilityCalc(footPosition, footSwitch, -1);};
-	
-	static stabMargin stabilityCalc(geometry_msgs::Polygon footPositions, std_msgs::UInt8MultiArray footSw, int testLeg){
-		// input foot positions and foot switch states
-		// as well as what leg we are considering raising
-		//
+
+	stabMargin stability(int testLeg){
+		// input what leg we are considering raising
 		// if you want just the current state, set testLeg to -1 in the function call
 
-		stabMargin S;
+		std_msgs::UInt8MultiArray localFootSw = footSwitch;
+		stabMargin stab;
 		float sHolder = 0;
-		S.plus = 0;
-		S.minus = 0;
+		stab.plus = 0;
+		stab.minus = 0;
 
-		if(testLeg != -1) footSw.data[testLeg] = 0;
+		if(testLeg != -1) localFootSw.data[testLeg] = 0;
 
 		for(int i=0;i<3;i++){
-			if(footSw.data[i] != 0 && footSw.data[i+1] != 0){
-				sHolder = (footPositions.points[i].x + footPositions.points[i+1].x) / 2;
-				if(sHolder > S.plus) S.plus = sHolder;
-				else if(sHolder < S.minus) S.minus = sHolder;
+			if(localFootSw.data[i] != 0 && localFootSw.data[i+1] != 0){
+				sHolder = (footPosition.points[i].x + footPosition.points[i+1].x) / 2;
+				if(sHolder > stab.plus) stab.plus = sHolder;
+				else if(sHolder < stab.minus) stab.minus = sHolder;
 			}
 		}
-		return S;
+		return stab;
 	};
 };
 
@@ -73,27 +72,33 @@ robot brandon;
 
 // ----- Callback Functions ------
 
-void switchCallback(const std_msgs::UInt8MultiArray::ConstPtr& switchCallback){
-	// current foot switch states
+void manualControlCallback(const geometry_msgs::Twist::ConstPtr& msg){
+	// input velocity
 	// add format of multiarray for ease-of-use
-	brandon.footSwitch = *switchCallback;	// switch state input
+	brandon.velocity = *msg;	// velocity
 }
 
-void footCallback(const geometry_msgs::Polygon::ConstPtr& footCallback){
+void switchCallback(const std_msgs::UInt8MultiArray::ConstPtr& msg){
+	// current foot switch states
+	// add format of multiarray for ease-of-use
+	brandon.footSwitch = *msg;	// switch state input
+}
+
+void footCallback(const geometry_msgs::Polygon::ConstPtr& msg){
 	// current foot positions
 	// brandon.footPosition.points[i].x
 	// brandon.footPosition.points[i].y
 	// brandon.footPosition.points[i].z
-	brandon.footPosition = *footCallback;
+	brandon.footPosition = *msg;
 }
 
-void orientationControlCallback(const geometry_msgs::Quaternion::ConstPtr& orientCallback){
+void orientationControlCallback(const geometry_msgs::Quaternion::ConstPtr& msg){
 	
 	
 	//Message reads in Pitch, Roll, Yaw(msg->data.x, msg->data.y, msg->data.z respectively)
 	//Pitch should be no greater than |30 degrees| (absolute value)
 	//Roll should be no greater than 
-	brandon.orientation = *orientCallback;
+	brandon.orientation = *msg;
 	
 	//Units in cm for deltaRho
 	//Will adjust the deltaRho offsets for each leg based on the offset data to adjust balance
@@ -167,7 +172,7 @@ int main(int argc, char **argv){
 	ros::Subscriber switchSub = n.subscribe("foot_switches", 5, switchCallback);
 	ros::Subscriber footSub = n.subscribe("foot_position", 5, footCallback);
 	ros::Subscriber eulerSub = n.subscribe("orientation_control", 5, orientationControlCallback);
-	//ros::Subscriber joystickSub = n.subscribe("joystick/xinput", 5, joystickCallback);
+	ros::Subscriber manualControlSub = n.subscribe("manual_control", 5, manualControlCallback);
 
 	while(ros::ok()){
 		ros::spinOnce();
