@@ -47,6 +47,13 @@ double map(double in, double inLower, double inUpper, double outLower, double ou
 
 //channel 0 = all channels
 int move_servo(int channel, float pulse_width_ms){
+	if (pulse_width_ms > upper_pulse_width_ms) {
+		pulse_width_ms = upper_pulse_width_ms;
+	}
+	else if (pulse_width_ms < lower_pulse_width_ms) {
+		pulse_width_ms = lower_pulse_width_ms;
+	}
+	
 	int pulse_width_us = pulse_width_ms * 1000;
 	if(pulse_width_us == 0){
 		return 0; //intentionally don't send anything
