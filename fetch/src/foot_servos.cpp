@@ -12,9 +12,9 @@
 bool enableLogging;
 bool useOnboardPower;
 int frequency_hz; //frequency to send pulses
-float default_pulse_width = 1.5;
 int number_of_channels = 8;
-std::vector<float> pulse_width_ms;
+std::vector<float> servo_angles;
+double lower_pulse_width_ms, upper_pulse_width_ms, lower_angle, upper_angle;
 
 int board_init(){
 	if (useOnboardPower) {
@@ -40,6 +40,11 @@ int board_init(){
 	return 0;
 }
 
+double map(double in, double inLower, double inUpper, double outLower, double outUpper){
+	// https://stackoverflow.com/a/345204
+	return (in-inLower)/(inUpper-inLower) * (outUpper-outLower) + outLower;
+}
+
 //channel 0 = all channels
 int move_servo(int channel, float pulse_width_ms){
 	int pulse_width_us = pulse_width_ms * 1000;
@@ -63,7 +68,7 @@ void pulseWidthCallback(const std_msgs::Float32MultiArray::ConstPtr& msg){
 			ROS_ERROR("More servo motor angles sent than channels available. Truncating message read at %i channels.", number_of_channels);
 			return;
 		}
-		pulse_width_ms.at(i) = *it;
+		servo_angles.at(i) = *it;
 		i++;
 	}
 }
@@ -76,9 +81,14 @@ int main(int argc, char **argv){
 	n.param("foot_servos_enable_logging", enableLogging, false);
 	n.param("foot_servos_use_onboard_power", useOnboardPower, false);
 	n.param("foot_servos_pulse_frequency", frequency_hz, 50);
+	n.param("foot_servos_lower_pulse_width_ms", lower_pulse_width_ms, 0.9);
+	n.param("foot_servos_upper_pulse_width_ms", upper_pulse_width_ms, 2.1);
+	n.param("foot_servos_lower_angle", lower_angle, -90.0);
+	n.param("foot_servos_upper_angle", upper_angle, 90.0);
 
+	float midpoint_angle = (upper_angle+lower_angle)/2;
 	for(int i = 0; i < number_of_channels; i++){
-		pulse_width_ms.push_back(default_pulse_width);
+		servo_angles.push_back(midpoint_angle);
 	}
 	ros::Subscriber pulseWidthSub = n.subscribe("foot/pulse_width_ms", 5, pulseWidthCallback);
 	ros::spinOnce();
@@ -89,8 +99,8 @@ int main(int argc, char **argv){
 	while(ros::ok()) {
 		ros::spinOnce();
 		
-		for(int i = 0; i < pulse_width_ms.size(); i++){
-			move_servo(i+1, pulse_width_ms.at(i));
+		for(int i = 0; i < servo_angles.size(); i++){
+			move_servo(i+1, map(servo_angles.at(i),lower_angle, upper_angle, lower_pulse_width_ms, upper_pulse_width_ms));
 		}
 
 		loopRate.sleep();
