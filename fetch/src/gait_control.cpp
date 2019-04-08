@@ -30,7 +30,7 @@ class stabMargin{
 public:
 	float plus, minus;
 	float min(void){
-		if(abs(plus) > abs(minus)) return abs(plus);
+		if(abs(plus) < abs(minus)) return abs(plus);
 		else return abs(minus); 
 	}
 };
