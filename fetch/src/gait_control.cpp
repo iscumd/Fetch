@@ -8,19 +8,11 @@
 
 #include <string>
 
-
+#define FREQ 20
 
 // -------- ROS Specific ---------
 
-//fetch::RhoThetaQArray rtq;
-//std_msgs::UInt8MultiArray footSwitch;
-//geometry_msgs::Polygon footPos;
-//geometry_msgs::Quaternion orient;
-
 // ---- Variables and Classes ----
-
-// static rc_mpu_data_t data;
-// float32<vector> deltaRho = 0;
 
 bool enableLogging;
 double leftRollThresh, rightRollThresh, forwardPitchThresh;
@@ -43,7 +35,8 @@ public:
 	geometry_msgs::Twist velocity;
 	
 	fetch::RhoThetaQArray rtq;
-	float deltaRho[];
+	float deltaRho[4];
+	int state[4];
 
 	stabMargin stability(int testLeg){
 		// input what leg we are considering raising
@@ -132,15 +125,33 @@ void orientationControlCallback(const geometry_msgs::Quaternion::ConstPtr& msg){
 }	
 
 // ---------- Functions ----------
+void lift(int leg){
+	brandon.rtq.rho[leg] -= 5;
+	brandon.deltaRho[leg] -=5;
+}
 
+void swing(int leg){
 
-/* void swing(int leg){
+}
 
-}*/
+void drop(int leg){
+	if (brandon.footSwitch.data[leg] == false){
+		brandon.rtq.rho[leg] += 1;
+		brandon.deltaRho[leg] +=1;
+	}else {
+		brandon.state[leg] = 3;
+		//TODO add timestamps per leg?
+	}
 
-/* void stride(int leg){
+}
 
-}*/
+void stride(int leg){
+	if (brandon.footSwitch.data[leg] == false){
+		brandon.rtq.rho[leg] += 1;
+		brandon.deltaRho[leg] +=1;
+	}
+	brandon.rtq.q[leg] -= brandon.velocity.linear.x/FREQ;
+}
 
 // ------------- Main ------------
 
@@ -153,7 +164,7 @@ int main(int argc, char **argv){
 	ros::NodeHandle n;
     
 	// specify loop frequency, works with Rate::sleep to sleep for the correct time
-    ros::Rate loop_rate(20);
+    ros::Rate loop_rate(FREQ);
 
 	// get ros params
 	n.param("gait_control_enable_logging", enableLogging, false);
@@ -177,10 +188,32 @@ int main(int argc, char **argv){
 	while(ros::ok()){
 		ros::spinOnce();
 
+		// decision making and state assignment goes here
+
+		for (int i=0;i<4;i++){
+			switch(brandon.state[i]){
+				//* 0 for swing function 1 for stride function
+
+			case 0:
+				lift(i);
+
+			case 1:
+				swing(i);
+
+			case 2:
+				drop(i);
+			
+			case 3:
+				stride(i);
+
+			};
+		};
 
 		gaitPub.publish(brandon.rtq);
 
-        // The thing is, Bob, it's not that I'm lazy, it's that I just don't care.
+		if(enableLogging) ROS_INFO("Execution time: [%f]", loop_rate.cycleTime().toSec());
+        
+		// The thing is, Bob, it's not that I'm lazy, it's that I just don't care.
 		loop_rate.sleep();
 	}
 
