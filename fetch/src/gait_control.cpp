@@ -34,6 +34,20 @@ public:
 	}
 };
 
+class bounds{
+	public:
+	float plus;
+	float minus;
+	float forward(float vel){
+		if (vel >= 0) return plus;
+		else return minus;
+	}
+	float reverse(float vel){
+		if (vel >= 0) return minus;
+		else return plus;
+	}
+};
+
 class robot{
 public:
 	std_msgs::UInt8MultiArray footSwitch;
