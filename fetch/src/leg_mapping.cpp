@@ -39,7 +39,7 @@ void rtqCallback(const fetch::RhoThetaQArray::ConstPtr& msg)
 	std_msgs::Float32MultiArray servoAngle;		// angle output
 
 	double rho;
-	double theta;
+	double legTheta;
 	double thetaOffset;
 	int i;
 
@@ -50,10 +50,10 @@ void rtqCallback(const fetch::RhoThetaQArray::ConstPtr& msg)
 
 		// rtq forms a right triangle
 		rho = sqrt(rtq.q[i]*rtq.q[i] + rtq.rho[i]*rtq.rho[i]); // magnitude of high-on-potenuse
-		theta = atan(rtq.q[i] / rtq.rho[i]) + rtq.theta[i];	// angle of triangle
+		legTheta = atan(rtq.q[i] / rtq.rho[i]) + rtq.theta[i];	// angle of triangle
 
-		point.x = rho*sin(theta);
-		point.z = -rho*cos(theta);  // negative because otherwise rho will have to be negative and that just seems weird
+		point.x = rho*sin(legTheta);
+		point.z = -rho*cos(legTheta);  // negative because otherwise rho will have to be negative and that just seems weird
 
 		if(enableLogging) ROS_INFO("leg mapping calculated points for leg [%i]\tx = [%f]\tz = [%f]", i, point.x, point.z);
 		footPoint.points.push_back(point);
@@ -64,7 +64,7 @@ void rtqCallback(const fetch::RhoThetaQArray::ConstPtr& msg)
 	for(int i = 0; i < 4; i++){
 		// simple cartesian to polar coordinate conversion
 		rho = sqrt(footPoint.points[i].x*footPoint.points[i].x + footPoint.points[i].z*footPoint.points[i].z);
-		theta = atan(footPoint.points[i].z / footPoint.points[i].x);
+		legTheta = atan(footPoint.points[i].z / footPoint.points[i].x);
 
 		// law of cosines to determine angles of the triangle
 		thetaOffset = acos(((upperLeg*upperLeg + rho*rho - lowerLeg*lowerLeg) / (2*upperLeg*rho))/PI);
@@ -73,13 +73,13 @@ void rtqCallback(const fetch::RhoThetaQArray::ConstPtr& msg)
 
 		// 'front' leg angle
 		float frontAngle;
-		frontAngle = (theta + thetaOffset) * 180 / PI; 
+		frontAngle = (legTheta + thetaOffset) * 180 / PI; 
 		frontAngle = normalizeAngle(frontAngle, 90, 180); // TODO: set up servo angle origin params
 		servoAngle.data.push_back(frontAngle);
 
 		// 'back' leg angle
 		float backAngle;
-		backAngle = (theta - thetaOffset) * 180 / PI;
+		backAngle = (legTheta - thetaOffset) * 180 / PI;
 		backAngle = normalizeAngle(backAngle, 270, 180); // TODO: set up servo angle origin params
 		servoAngle.data.push_back(backAngle);
 
