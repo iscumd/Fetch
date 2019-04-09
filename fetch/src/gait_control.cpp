@@ -12,6 +12,10 @@
 
 
 // -------- Variables --------
+
+double idealRho;
+double idealxOrient;
+
 bool enableLogging;
 double leftRollThresh, rightRollThresh, forwardPitchThresh;
 double backwardPitchThresh;
@@ -37,6 +41,13 @@ public:
 	geometry_msgs::Quaternion orientation;
 	geometry_msgs::Twist velocity;
 	
+	ros::Time cycleStart[4];
+	ros::Duration strideDuration[4];
+	ros::Duration cycleDuration[4];
+
+	float chassisRho;
+	float chassisXTheta;
+
 	fetch::RhoThetaQArray rtq;
 	float deltaRho[4];
 	int state[4];
@@ -46,7 +57,9 @@ public:
 		// if you want just the current state, set testLeg to -1 in the function call
 
 		std_msgs::UInt8MultiArray localFootSw = footSwitch;
-		geometry_msgs::Polygon localFootPosition = footPosition;
+		geometry_msgs::Polygon localFootPos = footPosition;
+
+		float theta = chassisXTheta;
 
 		stabMargin stab;
 		float sHolder = 0;
@@ -54,10 +67,10 @@ public:
 		stab.minus = 0;
 
 		// offset servos from center
-		localFootPosition.points[0].x += servoToCOM;
-		localFootPosition.points[1].x += servoToCOM;
-		localFootPosition.points[2].x -= servoToCOM;
-		localFootPosition.points[3].x -= servoToCOM;
+		localFootPos.points[0].x += servoToCOM*cos(theta);
+		localFootPos.points[1].x += servoToCOM*cos(theta);
+		localFootPos.points[2].x -= servoToCOM*cos(theta);
+		localFootPos.points[3].x -= servoToCOM*cos(theta);
 
 		// set test lift leg to zero
 		if(testLegLift != -1) localFootSw.data[testLegLift] = 0;
@@ -67,7 +80,7 @@ public:
 		for(int i=0;i<3;i++){
 			//TODO adjust for servo position with respect to COM and preferably orientation, currently just applies based on center which is wrong
 			if(localFootSw.data[i] != 0 && localFootSw.data[i+1] != 0){
-				sHolder = (localFootPosition.points[i].x + localFootPosition.points[i+1].x) / 2;
+				sHolder = (localFootPos.points[i].x + localFootPos.points[i+1].x) / 2;
 				if(sHolder > stab.plus) stab.plus = sHolder;
 				else if(sHolder < stab.minus) stab.minus = sHolder;
 			}
@@ -152,42 +165,69 @@ void orientAdjust(float xdir, float ydir, float magnitude){
 	//* set x/y dir as 0 if not adjusting in that direction
 	// sign points to direction adjusting TO, not the way you are falling
 	//! + is right? - is left? ethan should confirm
-	brandon.rtq.q[0] += magnitude * (-xdir - ydir);
-	brandon.rtq.q[1] += magnitude * (-xdir + ydir);
-	brandon.rtq.q[2] += magnitude * (xdir - ydir);
-	brandon.rtq.q[3] += magnitude * (xdir + ydir);
+	brandon.rtq.rho[0] += magnitude * (-xdir - ydir);
+	brandon.rtq.rho[1] += magnitude * (-xdir + ydir);
+	brandon.rtq.rho[2] += magnitude * (xdir - ydir);
+	brandon.rtq.rho[3] += magnitude * (xdir + ydir);
+	//! bounds function call needed
+}
+
+void heightAdjust(float height){
+	int legCount = 0;
+	float avHeight = 0;
+	float diff;
+	for (int i; i<4; i++){
+		if (brandon.footSwitch.data[i] == 1){
+			legCount++ ;
+			avHeight += brandon.rtq.rho[i];
+		}
+	}
+	avHeight = avHeight/legCount;
+	diff = height - avHeight;
+
+	brandon.rtq.q[0] += brandon.footSwitch.data[0] * diff / 2;
+	brandon.rtq.q[1] += brandon.footSwitch.data[1] * diff / 2;
+	brandon.rtq.q[2] += brandon.footSwitch.data[2] * diff / 2;
+	brandon.rtq.q[3] += brandon.footSwitch.data[3] * diff / 2;
+	//! bounds function call needed
 }
 
 void lift(int leg){ //* state 0
 	brandon.rtq.rho[leg] -= 5;
-	brandon.deltaRho[leg] -= 5;
+	////brandon.deltaRho[leg] -= 5;
 	brandon.state[leg] = 1;
+	//! bounds function call needed
 }
 
-void swing(int leg){ //* state 1
+void swing(int leg, float liftHeight){ //* state 1
 	// ensure leg is lifted up to standard height
-	if (brandon.rtq.rho[leg] > 5){
+	if (brandon.rtq.rho[leg] > liftHeight){
 		brandon.rtq.rho[leg] -= 2;
-		brandon.deltaRho[leg] -=2;
-	}else brandon.rtq.rho[leg] = 5;
+	}else brandon.rtq.rho[leg] = liftHeight;
+	//! bounds function call needed
 	// ensure leg is pulled to the right point on either side, depending on direction
 	if (brandon.rtq.q[leg] < 10*sign(brandon.velocity.linear.x)){
-		brandon.rtq.q[leg] += 3*sign(brandon.velocity.linear.x);
+		brandon.rtq.q[leg] += 3*brandon.velocity.linear.x;
 	}else brandon.rtq.q[leg] = 10*sign(brandon.velocity.linear.x);
 }
 
 void drop(int leg){ //* state 2
 	if (brandon.footSwitch.data[leg] == false){
 		brandon.rtq.rho[leg] += 1;
-		brandon.deltaRho[leg] +=1;
+		////brandon.deltaRho[leg] +=1;
+		//! bounds function call needed
 	}else {
 		brandon.state[leg] = 3;
+		brandon.cycleDuration[leg] = ros::Time::now() - brandon.cycleStart[leg];
+		brandon.cycleStart[leg] = ros::Time::now();
 		//TODO add timestamps per leg?
 	}
 }
 
 void stride(int leg){ //* state 3
-	if (brandon.footSwitch.data[leg] == false) brandon.rtq.rho[leg] += 1; ////brandon.deltaRho[leg] +=1;
+	if (brandon.footSwitch.data[leg] == false) brandon.rtq.rho[leg] += 1; 
+	//! bounds function call needed if rho is changed
+	////brandon.deltaRho[leg] +=1;
 	brandon.rtq.q[leg] -= brandon.velocity.linear.x/FREQ;
 	// TODO set up boundaries in brandon class
 	////if (brandon.rtq.q[leg] - brandon.e[leg].minus < 2) brandon.
@@ -209,6 +249,8 @@ int main(int argc, char **argv){
 	// get ros params
 	n.param("gait_control_enable_logging", enableLogging, false);
 	n.param("servo_to_com", servoToCOM, 18.5); //! default value should be measured
+	n.param("default_chassis_rho", idealRho, 25.0);
+	n.param("default_x_orient", idealxOrient, 0.0);
 	n.getParam("leg_boundaries", legBounds); //! not included in launch yet but really really needs to be there
    
     //Pitch and Roll Thresholds.
@@ -242,7 +284,7 @@ int main(int argc, char **argv){
 				lift(i);
 
 			case 1:
-				swing(i);
+				swing(i, 10);
 
 			case 2:
 				drop(i);
