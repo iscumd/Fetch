@@ -10,13 +10,16 @@
 
 #define FREQ 20
 
-// -------- ROS Specific ---------
 
-// ---- Variables and Classes ----
-
+// -------- Variables --------
 bool enableLogging;
 double leftRollThresh, rightRollThresh, forwardPitchThresh;
 double backwardPitchThresh;
+double servoToCOM;
+std::vector<double> legBounds;
+
+
+// ----------- Classes -----------
 
 class stabMargin{
 public:
@@ -38,21 +41,33 @@ public:
 	float deltaRho[4];
 	int state[4];
 
-	stabMargin stability(int testLeg){
+	stabMargin stability(int testLegLift, int testLegDrop){
 		// input what leg we are considering raising
 		// if you want just the current state, set testLeg to -1 in the function call
 
 		std_msgs::UInt8MultiArray localFootSw = footSwitch;
+		geometry_msgs::Polygon localFootPosition = footPosition;
+
 		stabMargin stab;
 		float sHolder = 0;
 		stab.plus = 0;
 		stab.minus = 0;
 
-		if(testLeg != -1) localFootSw.data[testLeg] = 0;
+		// offset servos from center
+		localFootPosition.points[0].x += servoToCOM;
+		localFootPosition.points[1].x += servoToCOM;
+		localFootPosition.points[2].x -= servoToCOM;
+		localFootPosition.points[3].x -= servoToCOM;
+
+		// set test lift leg to zero
+		if(testLegLift != -1) localFootSw.data[testLegLift] = 0;
+		// set test drop leg to one
+		if(testLegDrop != -1) localFootSw.data[testLegDrop] = 1;
 
 		for(int i=0;i<3;i++){
+			//TODO adjust for servo position with respect to COM and preferably orientation, currently just applies based on center which is wrong
 			if(localFootSw.data[i] != 0 && localFootSw.data[i+1] != 0){
-				sHolder = (footPosition.points[i].x + footPosition.points[i+1].x) / 2;
+				sHolder = (localFootPosition.points[i].x + localFootPosition.points[i+1].x) / 2;
 				if(sHolder > stab.plus) stab.plus = sHolder;
 				else if(sHolder < stab.minus) stab.minus = sHolder;
 			}
@@ -62,6 +77,7 @@ public:
 };
 
 robot brandon;
+
 
 // ----- Callback Functions ------
 
@@ -86,7 +102,7 @@ void footCallback(const geometry_msgs::Polygon::ConstPtr& msg){
 }
 
 void orientationControlCallback(const geometry_msgs::Quaternion::ConstPtr& msg){
-	
+	//TODO make boundary calculations a function in gait_control
 	
 	//Message reads in Pitch, Roll, Yaw(msg->data.x, msg->data.y, msg->data.z respectively)
 	//Pitch should be no greater than |30 degrees| (absolute value)
@@ -96,6 +112,7 @@ void orientationControlCallback(const geometry_msgs::Quaternion::ConstPtr& msg){
 	//Units in cm for deltaRho
 	//Will adjust the deltaRho offsets for each leg based on the offset data to adjust balance
 	if(brandon.orientation.x > forwardPitchThresh){
+		////orientAdjust(-1,0,1);
 		brandon.deltaRho[0]--;
 		brandon.deltaRho[1]--;
 		brandon.deltaRho[2]++;
@@ -103,6 +120,7 @@ void orientationControlCallback(const geometry_msgs::Quaternion::ConstPtr& msg){
 	}
 
 	if(brandon.orientation.x < backwardPitchThresh){
+		////orientAdjust(1,0,1);
 		brandon.deltaRho[0]++;
 		brandon.deltaRho[1]++;
 		brandon.deltaRho[2]--;
@@ -110,6 +128,7 @@ void orientationControlCallback(const geometry_msgs::Quaternion::ConstPtr& msg){
 	}
 
 	if(brandon.orientation.y < leftRollThresh){
+		////orientAdjust(0,1,1);
 		brandon.deltaRho[0]--;
 		brandon.deltaRho[2]--;
 		brandon.deltaRho[1]++;
@@ -117,6 +136,7 @@ void orientationControlCallback(const geometry_msgs::Quaternion::ConstPtr& msg){
 	}
 
 	if(brandon.orientation.y > rightRollThresh){
+		////orientAdjust(0,-1,1);
 		brandon.deltaRho[0]++;
 		brandon.deltaRho[2]++;
 		brandon.deltaRho[1]--;
@@ -125,16 +145,38 @@ void orientationControlCallback(const geometry_msgs::Quaternion::ConstPtr& msg){
 }	
 
 // ---------- Functions ----------
-void lift(int leg){
+
+int sign(float num){ return (num > 0) - (num < 0);}
+
+void orientAdjust(float xdir, float ydir, float magnitude){
+	//* set x/y dir as 0 if not adjusting in that direction
+	// sign points to direction adjusting TO, not the way you are falling
+	//! + is right? - is left? ethan should confirm
+	brandon.rtq.q[0] += magnitude * (-xdir - ydir);
+	brandon.rtq.q[1] += magnitude * (-xdir + ydir);
+	brandon.rtq.q[2] += magnitude * (xdir - ydir);
+	brandon.rtq.q[3] += magnitude * (xdir + ydir);
+}
+
+void lift(int leg){ //* state 0
 	brandon.rtq.rho[leg] -= 5;
-	brandon.deltaRho[leg] -=5;
+	brandon.deltaRho[leg] -= 5;
+	brandon.state[leg] = 1;
 }
 
-void swing(int leg){
-
+void swing(int leg){ //* state 1
+	// ensure leg is lifted up to standard height
+	if (brandon.rtq.rho[leg] > 5){
+		brandon.rtq.rho[leg] -= 2;
+		brandon.deltaRho[leg] -=2;
+	}else brandon.rtq.rho[leg] = 5;
+	// ensure leg is pulled to the right point on either side, depending on direction
+	if (brandon.rtq.q[leg] < 10*sign(brandon.velocity.linear.x)){
+		brandon.rtq.q[leg] += 3*sign(brandon.velocity.linear.x);
+	}else brandon.rtq.q[leg] = 10*sign(brandon.velocity.linear.x);
 }
 
-void drop(int leg){
+void drop(int leg){ //* state 2
 	if (brandon.footSwitch.data[leg] == false){
 		brandon.rtq.rho[leg] += 1;
 		brandon.deltaRho[leg] +=1;
@@ -142,15 +184,13 @@ void drop(int leg){
 		brandon.state[leg] = 3;
 		//TODO add timestamps per leg?
 	}
-
 }
 
-void stride(int leg){
-	if (brandon.footSwitch.data[leg] == false){
-		brandon.rtq.rho[leg] += 1;
-		brandon.deltaRho[leg] +=1;
-	}
+void stride(int leg){ //* state 3
+	if (brandon.footSwitch.data[leg] == false) brandon.rtq.rho[leg] += 1; ////brandon.deltaRho[leg] +=1;
 	brandon.rtq.q[leg] -= brandon.velocity.linear.x/FREQ;
+	// TODO set up boundaries in brandon class
+	////if (brandon.rtq.q[leg] - brandon.e[leg].minus < 2) brandon.
 }
 
 // ------------- Main ------------
@@ -168,6 +208,8 @@ int main(int argc, char **argv){
 
 	// get ros params
 	n.param("gait_control_enable_logging", enableLogging, false);
+	n.param("servo_to_com", servoToCOM, 18.5); //! default value should be measured
+	n.getParam("leg_boundaries", legBounds); //! not included in launch yet but really really needs to be there
    
     //Pitch and Roll Thresholds.
 	n.param("left_roll_threshold", leftRollThresh, -30.0);
@@ -188,7 +230,9 @@ int main(int argc, char **argv){
 	while(ros::ok()){
 		ros::spinOnce();
 
-		// decision making and state assignment goes here
+		//TODO: decision making and state assignment goes here
+		//set priority list for reacting to certain conditions
+		
 
 		for (int i=0;i<4;i++){
 			switch(brandon.state[i]){
