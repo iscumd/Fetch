@@ -8,11 +8,14 @@
 
 #include <string>
 
-#define FREQ 20
 
 
 // -------- Variables --------
 
+double FREQ;
+
+double minRho;
+double maxRho;
 double idealRho;
 double idealxOrient;
 
@@ -66,48 +69,8 @@ public:
 	float deltaRho[4];
 	int state[4];
 
+	stabMargin stability;
 	bounds e;
-
-	stabMargin stability(int testLegLift, int testLegDrop){
-		// input what leg we are considering raising
-		// if you want just the current state, set testLeg to -1 in the function call
-
-		std_msgs::UInt8MultiArray localFootSw = footSwitch;
-		geometry_msgs::Polygon localFootPos = footPosition;
-
-		float theta = chassisXTheta;
-
-		stabMargin stab;
-		float sHolder = 0;
-		stab.plus = 0;
-		stab.minus = 0;
-
-		// offset servos from center
-		localFootPos.points[0].x += servoToCOM*cos(theta);
-		localFootPos.points[1].x += servoToCOM*cos(theta);
-		localFootPos.points[2].x -= servoToCOM*cos(theta);
-		localFootPos.points[3].x -= servoToCOM*cos(theta);
-
-		// set test lift leg to zero
-		if(testLegLift != -1) localFootSw.data[testLegLift] = 0;
-		// set test drop leg to one
-		if(testLegDrop != -1) localFootSw.data[testLegDrop] = 1;
-
-		for(int i=0;i<3;i++){
-			//todo fix for testing leg stability between 0 and 3
-			//TODO adjust for servo position with respect to COM and preferably orientation, currently just applies based on center which is wrong
-			int j;
-			if (i < 3) j = i+1;
-			else j = 0;
-
-			if(localFootSw.data[i] != 0 && localFootSw.data[j] != 0){
-				sHolder = (localFootPos.points[i].x + localFootPos.points[j].x) / 2;
-				if(sHolder > stab.plus) stab.plus = sHolder;
-				else if(sHolder < stab.minus) stab.minus = sHolder;
-			}
-		}
-		return stab;
-	};
 };
 
 robot brandon;
@@ -117,7 +80,49 @@ robot brandon;
 
 int sign(float num){ return (num > 0) - (num < 0);}
 
+void boundCalc(int leg, float rho, float theta){
+	brandon.e.plus = 10;
+	brandon.e.minus = -10;
+}
 
+stabMargin stabilityCalc(int testLegLift, int testLegDrop){
+	// input what leg we are considering raising
+	// if you want just the current state, set testLeg to -1 in the function call
+
+	std_msgs::UInt8MultiArray localFootSw = brandon.footSwitch;
+	geometry_msgs::Polygon localFootPos = brandon.footPosition;
+
+	stabMargin stab;
+	float sHolder = 0;
+	stab.plus = 0;
+	stab.minus = 0;
+
+	// offset servos from center
+	localFootPos.points[0].x += servoToCOM*cos(brandon.chassisXTheta);
+	localFootPos.points[1].x += servoToCOM*cos(brandon.chassisXTheta);
+	localFootPos.points[2].x -= servoToCOM*cos(brandon.chassisXTheta);
+	localFootPos.points[3].x -= servoToCOM*cos(brandon.chassisXTheta);
+
+	// set test lift leg to zero
+	if(testLegLift != -1) localFootSw.data[testLegLift] = 0;
+	// set test drop leg to one
+	if(testLegDrop != -1) localFootSw.data[testLegDrop] = 1;
+
+	for(int i=0;i<3;i++){
+		//todo fix for testing leg stability between 0 and 3
+		//TODO adjust for servo position with respect to COM and preferably orientation, currently just applies based on center which is wrong
+		int j;
+		if (i < 3) j = i+1;
+		else j = 0;
+
+		if(localFootSw.data[i] != 0 && localFootSw.data[j] != 0){
+			sHolder = (localFootPos.points[i].x + localFootPos.points[j].x) / 2;
+			if(sHolder > stab.plus) stab.plus = sHolder;
+			else if(sHolder < stab.minus) stab.minus = sHolder;
+		}
+	}
+	return stab;
+};
 
 void orientAdjust(float xdir, float ydir){
 	//* set x/y dir as 0 if not adjusting in that direction
@@ -221,14 +226,13 @@ void swing(int leg, float liftHeight){ //* state 1
 	}
 	// ensure leg is pulled to the right point on either side, depending on direction
 	if (brandon.rtq.q[leg] < 10*sign(brandon.velocity.linear.x)){
-		brandon.rtq.q[leg] += 3*brandon.velocity.linear.x;
+		brandon.rtq.q[leg] += 3*brandon.velocity.linear.x/FREQ;
 	}else brandon.rtq.q[leg] = 10*sign(brandon.velocity.linear.x);
 }
 
 void drop(int leg){ //* state 2
 	if (brandon.footSwitch.data[leg] == false){
 		brandon.rtq.rho[leg] += 1;
-		////brandon.deltaRho[leg] +=1;
 		//! bounds function call needed
 	}else {
 		brandon.state[leg] = 3;
@@ -262,8 +266,11 @@ int main(int argc, char **argv){
     ros::Rate loop_rate(FREQ);
 
 	// get ros params
+	n.param("gait_control_frequency", FREQ, 20.0);
 	n.param("gait_control_enable_logging", enableLogging, false);
 	n.param("servo_to_com", servoToCOM, 18.5); //! default value should be measured
+	n.param("min_chassis_rho", minRho, 10.0);
+	n.param("max_chassis_rho", maxRho, 30.0);
 	n.param("default_chassis_rho", idealRho, 25.0);
 	n.param("default_x_orient", idealxOrient, 0.0);
 	n.getParam("leg_boundaries", legBounds); //! not included in launch yet but really really needs to be there
@@ -286,6 +293,8 @@ int main(int argc, char **argv){
 
 	while(ros::ok()){
 		ros::spinOnce();
+
+		brandon.stability = stabilityCalc(-1,-1); // update stability margins at the beginning of each loop
 
 		//TODO: decision making and state assignment goes here
 		//set priority list for reacting to certain conditions

@@ -35,6 +35,8 @@ float normalizeAngle(float angle, float min, float range){
 
 void rtqCallback(const fetch::RhoThetaQArray::ConstPtr& msg)
 {
+	ros::Time startTime =ros::Time::now();
+
 	geometry_msgs::Polygon footPoint;			// point output
 	std_msgs::Float32MultiArray servoAngle;		// angle output
 
@@ -50,12 +52,12 @@ void rtqCallback(const fetch::RhoThetaQArray::ConstPtr& msg)
 
 		// rtq forms a right triangle
 		rho = sqrt(rtq.q[i]*rtq.q[i] + rtq.rho[i]*rtq.rho[i]); // magnitude of high-on-potenuse
-		legTheta = atan(rtq.q[i] / rtq.rho[i]) + rtq.theta[i];	// angle of triangle
+		legTheta = atan(rtq.q[i] / -rtq.rho[i]) + rtq.theta[i];	// angle of triangle
 
 		point.x = rho*sin(legTheta);
-		point.z = -rho*cos(legTheta);  // negative because otherwise rho will have to be negative and that just seems weird
+		point.z = rho*cos(legTheta);  // negative because otherwise rho will have to be negative and that just seems weird
 
-		if(enableLogging) ROS_INFO("leg mapping calculated points for leg [%i]\tx = [%f]\tz = [%f]", i, point.x, point.z);
+		if(enableLogging) ROS_INFO("LM:\tleg [%i]\tpoints:\tx:[%f]\tz:[%f]", i, point.x, point.z);
 		footPoint.points.push_back(point);
 	}; 
 	footPointPub.publish(footPoint);
@@ -74,18 +76,24 @@ void rtqCallback(const fetch::RhoThetaQArray::ConstPtr& msg)
 		// 'front' leg angle
 		float frontAngle;
 		frontAngle = (legTheta + thetaOffset) * 180 / PI; 
-		frontAngle = normalizeAngle(frontAngle, 90, 180); // TODO: set up servo angle origin params
+		frontAngle = normalizeAngle(frontAngle, 120, 180); // TODO: set up servo angle origin params
 		servoAngle.data.push_back(frontAngle);
 
 		// 'back' leg angle
 		float backAngle;
 		backAngle = (legTheta - thetaOffset) * 180 / PI;
-		backAngle = normalizeAngle(backAngle, 270, 180); // TODO: set up servo angle origin params
+		backAngle = normalizeAngle(backAngle, 240, 180); // TODO: set up servo angle origin params
 		servoAngle.data.push_back(backAngle);
 
-		if(enableLogging){ROS_INFO("leg mapping calculated angles for leg [%i]\tfront = [%f]\trear = [%f]", i, frontAngle, backAngle); };
+		if(enableLogging){ROS_INFO("LM:\tleg [%i]\tangles:\tfront:[%f]\trear:[%f]", i, frontAngle, backAngle); };
 	};
 	servoAnglePub.publish(servoAngle);
+ 
+	if(enableLogging){
+		ros::Duration d = ros::Time::now() - startTime;
+   		double secs = d.toSec();
+		ROS_INFO("LM:\texec_time:\t[%f]", secs);
+		}
 }
 
 int main(int argc, char **argv){
@@ -93,7 +101,7 @@ int main(int argc, char **argv){
 
 	ros::NodeHandle n;
 
-	n.param("leg_mapping_enable_logging", enableLogging, false);
+	n.param("leg_mapping_enable_logging", enableLogging, true);
 	n.param("leg_mapping_upper_leg", upperLeg, 12.7);
 	n.param("leg_mapping_lower_leg", lowerLeg, 25.4);
 
