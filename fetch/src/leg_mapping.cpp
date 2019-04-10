@@ -14,58 +14,78 @@ ros::Publisher servoAnglePub;
 ros::Publisher footPointPub;
 
 // variables
-
+ros::Time startTime;
 // params
 double upperLeg;
 double lowerLeg;
 bool enableLogging;
 
+float normalizeAngle(float angle, float min, float range){
+	//! needs verification
+	
+	while (angle < 0) angle += 360; // remove negative options
+
+	angle -= min; // shift origin to the starting point
+
+	if (angle < 0 ) angle = 0; // filter negative out of bounds
+	else if (angle > range) angle = range; // filter positive out of bounds
+
+	return angle;
+}
+
 void rtqCallback(const fetch::RhoThetaQArray::ConstPtr& msg)
 {
+	if(enableLogging) startTime =ros::Time::now();
+
 	geometry_msgs::Polygon footPoint;			// point output
 	std_msgs::Float32MultiArray servoAngle;		// angle output
 
-	double rho;
-	double theta;
+	double legRho;
+	double legTheta;
 	double thetaOffset;
 	int i;
 
     fetch::RhoThetaQArray rtq = *msg;	// rtq input
-	ROS_INFO("1");
 	// Convert rtq to x,z for each leg
-	// refer to picture of shit on the drive
 	for(int i = 0; i < 4; i++){
 		geometry_msgs::Point32 point;
 
-		rho = sqrt(rtq.q[i]*rtq.q[i] + rtq.rho[i]*rtq.rho[i]);
-		theta = atan(rtq.q[i] / rtq.rho[i]) + rtq.theta[i];
+		// rtq forms a right triangle
+		legRho = sqrt(rtq.q[i]*rtq.q[i] + rtq.rho[i]*rtq.rho[i]); // magnitude of high-on-potenuse
+		legTheta = atan2(rtq.q[i], rtq.rho[i]) + rtq.theta[i] + 3*PI/2;	// angle of triangle
 
-		point.x = rho*cos(theta);
-		point.z = rho*sin(theta);
+		//* angles are simply the polar angle +/- the angle of the triangle formed
+		thetaOffset = acos(((upperLeg*upperLeg + legRho*legRho - lowerLeg*lowerLeg) / (2*upperLeg*legRho))/PI);
 
-		if(enableLogging) ROS_INFO("leg mapping calculated points for leg [%i] \t x = [%f] \t z = [%f]", i, point.x, point.z);
+		point.x = legRho*cos(legTheta);
+		point.z = legRho*sin(legTheta);
 		footPoint.points.push_back(point);
-	}; 
-	footPointPub.publish(footPoint);
 
-	// Convert x,z to theta1, theta2 for each leg
-	// refer to legstuff.m on Drive
-	for(int i = 0; i < 4; i++){
-		rho = sqrt(footPoint.points[i].x*footPoint.points[i].x + footPoint.points[i].z*footPoint.points[i].z);
-		theta = atan(footPoint.points[i].y / footPoint.points[i].x);
-		thetaOffset = acos((upperLeg*upperLeg + rho*rho - lowerLeg*lowerLeg) / (2*upperLeg*rho));
-
+		// 'front' leg angle
 		float frontAngle;
-		frontAngle = (theta + thetaOffset) * PI / 180; 	// 'front' leg angle
+		frontAngle = (legTheta + thetaOffset) * 180 / PI; 
+		if(enableLogging) ROS_INFO("LM:\tleg [%i]\tthetaf:[%f]", i, frontAngle);
+		frontAngle = normalizeAngle(frontAngle, 240, 180); // TODO: set up servo angle origin params
 		servoAngle.data.push_back(frontAngle);
 
+		// 'back' leg angle
 		float backAngle;
-		backAngle = (theta - thetaOffset) * PI / 180;	// 'rear' leg angle
+		backAngle = (legTheta - thetaOffset) * 180 / PI;
+		if(enableLogging) ROS_INFO("LM:\tleg [%i]\tthetab:[%f]", i, backAngle);
+		backAngle = normalizeAngle(backAngle, 120, 180); // TODO: set up servo angle origin params
 		servoAngle.data.push_back(backAngle);
 
-		if(enableLogging){ROS_INFO("leg mapping calculated angles for leg [%i] \t front = [%f] \t rear = [%f]", i, frontAngle, backAngle); };
-	};
+		if(enableLogging) ROS_INFO("LM:\tleg [%i]\tpoints:\tx:[%f]\tz:[%f]", i, point.x, point.z);
+		if(enableLogging) ROS_INFO("LM:\tleg [%i]\tangles:\tfront:[%f]\trear:[%f]", i, frontAngle, backAngle);
+	}; 
+	footPointPub.publish(footPoint);
 	servoAnglePub.publish(servoAngle);
+ 
+	if(enableLogging){
+		ros::Duration d = ros::Time::now() - startTime;
+   		double secs = d.toSec();
+		ROS_INFO("LM:\texec_time:\t[%f]", secs);
+		}
 }
 
 int main(int argc, char **argv){
@@ -73,7 +93,7 @@ int main(int argc, char **argv){
 
 	ros::NodeHandle n;
 
-	n.param("leg_mapping_enable_logging", enableLogging, false);
+	n.param("leg_mapping_enable_logging", enableLogging, true);
 	n.param("leg_mapping_upper_leg", upperLeg, 12.7);
 	n.param("leg_mapping_lower_leg", lowerLeg, 25.4);
 
