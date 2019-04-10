@@ -14,7 +14,7 @@ ros::Publisher servoAnglePub;
 ros::Publisher footPointPub;
 
 // variables
-
+ros::Time startTime;
 // params
 double upperLeg;
 double lowerLeg;
@@ -35,7 +35,7 @@ float normalizeAngle(float angle, float min, float range){
 
 void rtqCallback(const fetch::RhoThetaQArray::ConstPtr& msg)
 {
-	ros::Time startTime =ros::Time::now();
+	if(enableLogging) startTime =ros::Time::now();
 
 	geometry_msgs::Polygon footPoint;			// point output
 	std_msgs::Float32MultiArray servoAngle;		// angle output
@@ -76,7 +76,7 @@ void rtqCallback(const fetch::RhoThetaQArray::ConstPtr& msg)
 		servoAngle.data.push_back(backAngle);
 
 		if(enableLogging) ROS_INFO("LM:\tleg [%i]\tpoints:\tx:[%f]\tz:[%f]", i, point.x, point.z);
-		if(enableLogging){ROS_INFO("LM:\tleg [%i]\tangles:\tfront:[%f]\trear:[%f]", i, frontAngle, backAngle); };
+		if(enableLogging) ROS_INFO("LM:\tleg [%i]\tangles:\tfront:[%f]\trear:[%f]", i, frontAngle, backAngle);
 	}; 
 	footPointPub.publish(footPoint);
 	servoAnglePub.publish(servoAngle);

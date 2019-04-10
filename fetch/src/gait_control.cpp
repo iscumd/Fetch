@@ -268,7 +268,7 @@ int main(int argc, char **argv){
 	// get ros params
 	n.param("gait_control_frequency", FREQ, 20.0);
 	n.param("gait_control_enable_logging", enableLogging, false);
-	n.param("servo_to_com", servoToCOM, 18.5); //! default value should be measured
+	n.param("servo_to_com", servoToCOM, 18.5);
 	n.param("min_chassis_rho", minRho, 10.0);
 	n.param("max_chassis_rho", maxRho, 30.0);
 	n.param("default_chassis_rho", idealRho, 25.0);
