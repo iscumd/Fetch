@@ -40,7 +40,7 @@ void rtqCallback(const fetch::RhoThetaQArray::ConstPtr& msg)
 	geometry_msgs::Polygon footPoint;			// point output
 	std_msgs::Float32MultiArray servoAngle;		// angle output
 
-	double rho;
+	double legRho;
 	double legTheta;
 	double thetaOffset;
 	int i;
@@ -51,42 +51,34 @@ void rtqCallback(const fetch::RhoThetaQArray::ConstPtr& msg)
 		geometry_msgs::Point32 point;
 
 		// rtq forms a right triangle
-		rho = sqrt(rtq.q[i]*rtq.q[i] + rtq.rho[i]*rtq.rho[i]); // magnitude of high-on-potenuse
-		legTheta = atan(rtq.q[i] / -rtq.rho[i]) + rtq.theta[i];	// angle of triangle
-
-		point.x = rho*sin(legTheta);
-		point.z = rho*cos(legTheta);  // negative because otherwise rho will have to be negative and that just seems weird
-
-		if(enableLogging) ROS_INFO("LM:\tleg [%i]\tpoints:\tx:[%f]\tz:[%f]", i, point.x, point.z);
-		footPoint.points.push_back(point);
-	}; 
-	footPointPub.publish(footPoint);
-
-	//  Convert x,z to theta1, theta2 for each leg
-	for(int i = 0; i < 4; i++){
-		// simple cartesian to polar coordinate conversion
-		rho = sqrt(footPoint.points[i].x*footPoint.points[i].x + footPoint.points[i].z*footPoint.points[i].z);
-		legTheta = atan(footPoint.points[i].z / footPoint.points[i].x);
-
-		// law of cosines to determine angles of the triangle
-		thetaOffset = acos(((upperLeg*upperLeg + rho*rho - lowerLeg*lowerLeg) / (2*upperLeg*rho))/PI);
+		legRho = sqrt(rtq.q[i]*rtq.q[i] + rtq.rho[i]*rtq.rho[i]); // magnitude of high-on-potenuse
+		legTheta = atan2(rtq.q[i], rtq.rho[i]) + rtq.theta[i] + 3*PI/2;	// angle of triangle
 
 		//* angles are simply the polar angle +/- the angle of the triangle formed
+		thetaOffset = acos(((upperLeg*upperLeg + legRho*legRho - lowerLeg*lowerLeg) / (2*upperLeg*legRho))/PI);
+
+		point.x = legRho*cos(legTheta);
+		point.z = legRho*sin(legTheta);
+		footPoint.points.push_back(point);
 
 		// 'front' leg angle
 		float frontAngle;
 		frontAngle = (legTheta + thetaOffset) * 180 / PI; 
-		frontAngle = normalizeAngle(frontAngle, 120, 180); // TODO: set up servo angle origin params
+		if(enableLogging) ROS_INFO("LM:\tleg [%i]\tthetaf:[%f]", i, frontAngle);
+		frontAngle = normalizeAngle(frontAngle, 240, 180); // TODO: set up servo angle origin params
 		servoAngle.data.push_back(frontAngle);
 
 		// 'back' leg angle
 		float backAngle;
 		backAngle = (legTheta - thetaOffset) * 180 / PI;
-		backAngle = normalizeAngle(backAngle, 240, 180); // TODO: set up servo angle origin params
+		if(enableLogging) ROS_INFO("LM:\tleg [%i]\tthetab:[%f]", i, backAngle);
+		backAngle = normalizeAngle(backAngle, 120, 180); // TODO: set up servo angle origin params
 		servoAngle.data.push_back(backAngle);
 
+		if(enableLogging) ROS_INFO("LM:\tleg [%i]\tpoints:\tx:[%f]\tz:[%f]", i, point.x, point.z);
 		if(enableLogging){ROS_INFO("LM:\tleg [%i]\tangles:\tfront:[%f]\trear:[%f]", i, frontAngle, backAngle); };
-	};
+	}; 
+	footPointPub.publish(footPoint);
 	servoAnglePub.publish(servoAngle);
  
 	if(enableLogging){
