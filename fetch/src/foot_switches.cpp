@@ -14,7 +14,7 @@
 #define  BUTTON_PIN_BACK_RIGHT	3,17
 
 bool enableLogging;
-int frequency_hz = 0.5;
+double frequency_hz;
 std::vector<uint8_t> buttons;
 volatile static uint8_t button0_volatile;
 volatile static uint8_t button1_volatile;
@@ -85,6 +85,7 @@ int main(int argc, char **argv){
 	ros::NodeHandle n;
 
 	n.param("foot_switches_enable_logging", enableLogging, false);
+	n.param("foot_switches_publish_frequency_hz", frequency_hz, 5);
 
 	pub = n.advertise<std_msgs::UInt8MultiArray>("foot_switches", 100);
 	ros::spinOnce();
@@ -108,15 +109,14 @@ int main(int argc, char **argv){
 	rc_button_set_callbacks(BUTTON_PIN_BACK_LEFT, __on_back_left_press, __on_back_left_release);
 	rc_button_set_callbacks(BUTTON_PIN_BACK_RIGHT, __on_back_right_press, __on_back_right_release);
 
-	// ros::Rate loopRate(frequency_hz);
+	ros::Rate loopRate(frequency_hz);
 	while(ros::ok()) {
 		if(button0_volatile != buttons.at(0) || button1_volatile != buttons.at(1) 
 			|| button2_volatile != buttons.at(2) || button3_volatile != buttons.at(3)){
 			publish_message();
 		}
 		ros::spinOnce();
-		rc_usleep(frequency_hz*1000000);
-		// loopRate.sleep();
+		loopRate.sleep();
 	}
 	rc_button_cleanup();
 	return 0;
