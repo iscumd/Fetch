@@ -18,6 +18,7 @@ double minRho, maxRho;
 double idealRho, idealxOrient;
 double forwardStabThresh, backwardStabThresh; //! add param
 double defaultRho, defaultTheta, defaultQ;
+double swingVel, dropVel;
 
 bool enableLogging;
 double leftRollThresh, rightRollThresh;
@@ -135,14 +136,14 @@ stabMargin stabilityCalc(int testLegLift, int testLegDrop){
 	return stab;
 };
 
-void orientAdjust(float xdir, float ydir){ //todo adjust for frequency
+void orientAdjust(float xdir, float ydir){
 	//* set x/y dir as 0 if not adjusting in that direction
 	// sign points to direction adjusting TO, not the way you are falling
 	//! + is right? - is left? ethan should confirm
-	brandon.rtq.rho[0] += brandon.footSwitch.data[0] * (-xdir - ydir);
-	brandon.rtq.rho[1] += brandon.footSwitch.data[1] * (-xdir + ydir);
-	brandon.rtq.rho[2] += brandon.footSwitch.data[2] * (xdir - ydir);
-	brandon.rtq.rho[3] += brandon.footSwitch.data[3] * (xdir + ydir);
+	brandon.rtq.rho[0] += brandon.footSwitch.data[0] * (-xdir - ydir)/FREQ;
+	brandon.rtq.rho[1] += brandon.footSwitch.data[1] * (-xdir + ydir)/FREQ;
+	brandon.rtq.rho[2] += brandon.footSwitch.data[2] * (xdir - ydir)/FREQ;
+	brandon.rtq.rho[3] += brandon.footSwitch.data[3] * (xdir + ydir)/FREQ;
 	boundCalc(0,0,0);
 }
 
@@ -159,10 +160,10 @@ void heightAdjust(float height){
 	avHeight = avHeight/legCount;
 	diff = height - avHeight;
 
-	brandon.rtq.q[0] += brandon.footSwitch.data[0] * diff / 2;
-	brandon.rtq.q[1] += brandon.footSwitch.data[1] * diff / 2;
-	brandon.rtq.q[2] += brandon.footSwitch.data[2] * diff / 2;
-	brandon.rtq.q[3] += brandon.footSwitch.data[3] * diff / 2;
+	brandon.rtq.q[0] += brandon.footSwitch.data[0] * diff / FREQ;
+	brandon.rtq.q[1] += brandon.footSwitch.data[1] * diff / FREQ;
+	brandon.rtq.q[2] += brandon.footSwitch.data[2] * diff / FREQ;
+	brandon.rtq.q[3] += brandon.footSwitch.data[3] * diff / FREQ;
 	boundCalc(0,0,0);
 }
 
@@ -197,30 +198,26 @@ void footCallback(const geometry_msgs::Polygon::ConstPtr& msg){
 	brandon.footPosition = *msg;
 }
 
-void orientationControlCallback(const geometry_msgs::Quaternion::ConstPtr& msg){
-	//TODO make boundary calculations a function in gait_control
-	
+void orientationControlCallback(const geometry_msgs::Quaternion::ConstPtr& msg){	
 	//Message reads in Pitch, Roll, Yaw(msg->data.x, msg->data.y, msg->data.z respectively)
 	//Pitch should be no greater than |30 degrees| (absolute value)
 	//Roll should be no greater than 
 	brandon.orientation = *msg;
 	
-	//Units in cm for deltaRho
-	//Will adjust the deltaRho offsets for each leg based on the offset data to adjust balance
 	if(brandon.orientation.x > forwardPitchThresh){
-		orientAdjust(-1,0); //todo adjust for frequency
+		orientAdjust(-1,0); 
 	}
 
 	if(brandon.orientation.x < backwardPitchThresh){
-		orientAdjust(1,0); //todo adjust for frequency
+		orientAdjust(1,0);
 	}
 
 	if(brandon.orientation.y < leftRollThresh){
-		orientAdjust(0,1); //todo adjust for frequency
+		orientAdjust(0,1);
 	}
 
 	if(brandon.orientation.y > rightRollThresh){
-		orientAdjust(0,-1); //todo adjust for frequency
+		orientAdjust(0,-1); 
 	}
 }	
 
@@ -237,7 +234,7 @@ void lift(int leg){ //* state 0
 void swing(int leg, float liftHeight){ //* state 1
 	// ensure leg is lifted up to standard height
 	if (brandon.rtq.rho[leg] > liftHeight){
-		brandon.rtq.rho[leg] -= 2; //todo adjust for frequency
+		brandon.rtq.rho[leg] -= swingVel/FREQ;
 		boundCalc(0,0,0);
 	}else if (brandon.rtq.rho[leg] < liftHeight){
 		brandon.rtq.rho[leg] -= 2; //todo adjust for frequency
@@ -251,14 +248,13 @@ void swing(int leg, float liftHeight){ //* state 1
 
 void drop(int leg){ //* state 2
 	if (brandon.footSwitch.data[leg] == false){
-		brandon.rtq.rho[leg] += 1; //todo adjust for frequency
+		brandon.rtq.rho[leg] += dropVel/FREQ;
 		boundCalc(0,0,0);
 	}else {
 		brandon.state[leg] = 3;
 		brandon.cycleDuration[leg] = ros::Time::now() - brandon.cycleStart[leg];
 		brandon.cycleStart[leg] = ros::Time::now();
 		brandon.legRef = leg;
-		//TODO add timestamps per leg?
 	}
 }
 
@@ -268,7 +264,6 @@ void stride(int leg){ //* state 3
 		boundCalc(0,0,0);
 	}
 	brandon.rtq.q[leg] -= brandon.velocity.linear.x/FREQ;
-	// TODO set up boundaries in brandon class
 	brandon.k[leg] = abs(brandon.rtq.q[leg] - brandon.e.reverse(brandon.velocity.linear.x));
 }
 
@@ -297,6 +292,8 @@ int main(int argc, char **argv){
 	n.param("default_chassis_rho", idealRho, 25.0);
 	n.param("default_x_orient", idealxOrient, 0.0);
 	n.getParam("leg_boundaries", legBounds);
+	n.param("swing_velocity", swingVel, 30.0);
+	n.param("drop_velocity", dropVel, 30.0);
    
     //Pitch and Roll Thresholds.
 	n.param("left_roll_threshold", leftRollThresh, -30.0);
