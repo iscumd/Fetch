@@ -234,7 +234,7 @@ void lift(int leg){ //* state 0
 void swing(int leg, float liftHeight){ //* state 1
 	// ensure leg is lifted up to standard height
 	if (brandon.rtq.rho[leg] > liftHeight){
-		brandon.rtq.rho[leg] -= swingVel/FREQ;
+		brandon.rtq.rho[leg] liftHeight;
 		boundCalc(0,0,0);
 	}else if (brandon.rtq.rho[leg] < liftHeight){
 		brandon.rtq.rho[leg] -= 2; //todo adjust for frequency
