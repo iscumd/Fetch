@@ -14,14 +14,14 @@
 
 double FREQ;
 
-double minRho;
-double maxRho;
-double idealRho;
-double idealxOrient;
+double minRho, maxRho;
+double idealRho, idealxOrient;
+double forwardStabThresh, backwardStabThresh; //! add param
+double defaultRho, defaultTheta, defaultQ;
 
 bool enableLogging;
-double leftRollThresh, rightRollThresh, forwardPitchThresh;
-double backwardPitchThresh;
+double leftRollThresh, rightRollThresh;
+double forwardPitchThresh, backwardPitchThresh;
 double servoToCOM;
 std::vector<double> legBounds;
 
@@ -34,6 +34,14 @@ public:
 	float min(void){
 		if(abs(plus) < abs(minus)) return abs(plus);
 		else return abs(minus); 
+	}
+	float forward(float vel){
+		if (vel >= 0) return plus;
+		else return minus;
+	}
+	float reverse(float vel){
+		if (vel >= 0) return minus;
+		else return plus;
 	}
 };
 
@@ -66,8 +74,12 @@ public:
 	float chassisXTheta;
 
 	fetch::RhoThetaQArray rtq;
-	float deltaRho[4];
+	float k[4];
 	int state[4];
+	int legRef, nextLeg;
+
+	int forwardLeg[2];
+	int rearLeg[2];
 
 	stabMargin stability;
 	bounds e;
@@ -83,6 +95,7 @@ int sign(float num){ return (num > 0) - (num < 0);}
 void boundCalc(int leg, float rho, float theta){
 	brandon.e.plus = 10;
 	brandon.e.minus = -10;
+	// also limit rho before this
 }
 
 stabMargin stabilityCalc(int testLegLift, int testLegDrop){
@@ -109,8 +122,6 @@ stabMargin stabilityCalc(int testLegLift, int testLegDrop){
 	if(testLegDrop != -1) localFootSw.data[testLegDrop] = 1;
 
 	for(int i=0;i<3;i++){
-		//todo fix for testing leg stability between 0 and 3
-		//TODO adjust for servo position with respect to COM and preferably orientation, currently just applies based on center which is wrong
 		int j;
 		if (i < 3) j = i+1;
 		else j = 0;
@@ -124,7 +135,7 @@ stabMargin stabilityCalc(int testLegLift, int testLegDrop){
 	return stab;
 };
 
-void orientAdjust(float xdir, float ydir){
+void orientAdjust(float xdir, float ydir){ //todo adjust for frequency
 	//* set x/y dir as 0 if not adjusting in that direction
 	// sign points to direction adjusting TO, not the way you are falling
 	//! + is right? - is left? ethan should confirm
@@ -132,7 +143,7 @@ void orientAdjust(float xdir, float ydir){
 	brandon.rtq.rho[1] += brandon.footSwitch.data[1] * (-xdir + ydir);
 	brandon.rtq.rho[2] += brandon.footSwitch.data[2] * (xdir - ydir);
 	brandon.rtq.rho[3] += brandon.footSwitch.data[3] * (xdir + ydir);
-	//! bounds function call needed
+	boundCalc(0,0,0);
 }
 
 void heightAdjust(float height){
@@ -152,9 +163,16 @@ void heightAdjust(float height){
 	brandon.rtq.q[1] += brandon.footSwitch.data[1] * diff / 2;
 	brandon.rtq.q[2] += brandon.footSwitch.data[2] * diff / 2;
 	brandon.rtq.q[3] += brandon.footSwitch.data[3] * diff / 2;
-	//! bounds function call needed
+	boundCalc(0,0,0);
 }
 
+void footZero(){
+	for (int i =0; i < 4; i++){
+		brandon.rtq.rho[i]=defaultRho;
+		brandon.rtq.theta[i]=defaultTheta;
+		brandon.rtq.q[i]=defaultQ;
+	}
+}
 
 // ----- Callback Functions ------
 
@@ -189,19 +207,19 @@ void orientationControlCallback(const geometry_msgs::Quaternion::ConstPtr& msg){
 	//Units in cm for deltaRho
 	//Will adjust the deltaRho offsets for each leg based on the offset data to adjust balance
 	if(brandon.orientation.x > forwardPitchThresh){
-		orientAdjust(-1,0);
+		orientAdjust(-1,0); //todo adjust for frequency
 	}
 
 	if(brandon.orientation.x < backwardPitchThresh){
-		orientAdjust(1,0);
+		orientAdjust(1,0); //todo adjust for frequency
 	}
 
 	if(brandon.orientation.y < leftRollThresh){
-		orientAdjust(0,1);
+		orientAdjust(0,1); //todo adjust for frequency
 	}
 
 	if(brandon.orientation.y > rightRollThresh){
-		orientAdjust(0,-1);
+		orientAdjust(0,-1); //todo adjust for frequency
 	}
 }	
 
@@ -210,34 +228,35 @@ void orientationControlCallback(const geometry_msgs::Quaternion::ConstPtr& msg){
 
 void lift(int leg){ //* state 0
 	brandon.rtq.rho[leg] -= 5;
-	////brandon.deltaRho[leg] -= 5;
+	////brandon.k[leg] = -1;
 	brandon.state[leg] = 1;
-	//! bounds function call needed
+	boundCalc(0,0,0);
 }
 
 void swing(int leg, float liftHeight){ //* state 1
 	// ensure leg is lifted up to standard height
 	if (brandon.rtq.rho[leg] > liftHeight){
-		brandon.rtq.rho[leg] -= 2;
-		//! bounds function call needed
+		brandon.rtq.rho[leg] -= 2; //todo adjust for frequency
+		boundCalc(0,0,0);
 	}else if (brandon.rtq.rho[leg] < liftHeight){
-		brandon.rtq.rho[leg] -= 2;
-		//! bounds function call needed
+		brandon.rtq.rho[leg] -= 2; //todo adjust for frequency
+		boundCalc(0,0,0);
 	}
 	// ensure leg is pulled to the right point on either side, depending on direction
-	if (brandon.rtq.q[leg] < 10*sign(brandon.velocity.linear.x)){
+	if (brandon.rtq.q[leg] < brandon.e.forward(brandon.velocity.linear.x)){
 		brandon.rtq.q[leg] += 3*brandon.velocity.linear.x/FREQ;
-	}else brandon.rtq.q[leg] = 10*sign(brandon.velocity.linear.x);
+	}else brandon.rtq.q[leg] = brandon.e.forward(brandon.velocity.linear.x);
 }
 
 void drop(int leg){ //* state 2
 	if (brandon.footSwitch.data[leg] == false){
-		brandon.rtq.rho[leg] += 1;
-		//! bounds function call needed
+		brandon.rtq.rho[leg] += 1; //todo adjust for frequency
+		boundCalc(0,0,0);
 	}else {
 		brandon.state[leg] = 3;
 		brandon.cycleDuration[leg] = ros::Time::now() - brandon.cycleStart[leg];
 		brandon.cycleStart[leg] = ros::Time::now();
+		brandon.legRef = leg;
 		//TODO add timestamps per leg?
 	}
 }
@@ -245,11 +264,11 @@ void drop(int leg){ //* state 2
 void stride(int leg){ //* state 3
 	if (brandon.footSwitch.data[leg] == false) {
 		brandon.rtq.rho[leg] += 1; 
-		//! bounds function call needed if rho is changed
+		boundCalc(0,0,0);
 	}
 	brandon.rtq.q[leg] -= brandon.velocity.linear.x/FREQ;
 	// TODO set up boundaries in brandon class
-	//if (brandon.rtq.q[leg] - brandon.e[leg].minus < 2) brandon.
+	brandon.k[leg] = abs(brandon.rtq.q[leg] - brandon.e.reverse(brandon.velocity.linear.x));
 }
 
 // ------------- Main ------------
@@ -266,14 +285,17 @@ int main(int argc, char **argv){
     ros::Rate loop_rate(FREQ);
 
 	// get ros params
-	n.param("gait_control_frequency", FREQ, 20.0);
+	n.param("gait_control_frequency", FREQ, 5.0);
 	n.param("gait_control_enable_logging", enableLogging, false);
 	n.param("servo_to_com", servoToCOM, 18.5);
 	n.param("min_chassis_rho", minRho, 10.0);
 	n.param("max_chassis_rho", maxRho, 30.0);
+	n.param("default_leg_rho", defaultRho, 20.0);
+	n.param("default_leg_theta", defaultTheta, 0.0);
+	n.param("default_leg_q", defaultQ, 0.0);
 	n.param("default_chassis_rho", idealRho, 25.0);
 	n.param("default_x_orient", idealxOrient, 0.0);
-	n.getParam("leg_boundaries", legBounds); //! not included in launch yet but really really needs to be there
+	n.getParam("leg_boundaries", legBounds);
    
     //Pitch and Roll Thresholds.
 	n.param("left_roll_threshold", leftRollThresh, -30.0);
@@ -290,6 +312,8 @@ int main(int argc, char **argv){
 	ros::Subscriber footSub = n.subscribe("foot_position", 5, footCallback);
 	ros::Subscriber eulerSub = n.subscribe("orientation_control", 5, orientationControlCallback);
 	ros::Subscriber manualControlSub = n.subscribe("manual_control", 5, manualControlCallback);
+	// initialize leg positions
+	footZero();
 
 	while(ros::ok()){
 		ros::spinOnce();
@@ -297,8 +321,53 @@ int main(int argc, char **argv){
 		brandon.stability = stabilityCalc(-1,-1); // update stability margins at the beginning of each loop
 
 		//TODO: decision making and state assignment goes here
-		//set priority list for reacting to certain conditions
 		
+		//! all decisions need to check stability first
+		//*set priority list for reacting to certain conditions
+
+		//*stability margin
+		// S+
+		if (brandon.stability.forward(brandon.velocity.linear.x) < forwardStabThresh){
+			for(int i=0; i < 1; i ++){
+				if (brandon.state[brandon.forwardLeg[i]] != 3){
+					if (stabilityCalc(-1, brandon.forwardLeg[i]).forward(brandon.velocity.linear.x) > forwardStabThresh) brandon.state[brandon.forwardLeg[i]] = 2;
+					else brandon.state[brandon.forwardLeg[i]] = 1;
+				}
+			}
+		}
+
+		// s- : 	only big issue with slope probably
+		
+		//*phase between legs
+		// ... 0,2,1,3 ...
+		// try to keep duty cycle/time delay between legs
+		// elength = velocity * CT * DutyRatio
+		//// DR = 1 - phi/ something?	
+		//// (1-DR)*avCT
+		// compare average cycle time and start times
+		switch (brandon.legRef){
+			case 0:
+			brandon.nextLeg = 2;
+			case 1:
+			brandon.nextLeg = 3;
+			case 2:
+			brandon.nextLeg = 1;
+			case 3:
+			brandon.nextLeg = 0;
+		}
+		if(stabilityCalc(brandon.nextLeg, -1).min() > forwardStabThresh) brandon.state[brandon.nextLeg] = 0;
+		
+		//*k check
+		//	final check, otherwise no state changes necessary
+		for (int i=0;i<4;i++){
+			if (brandon.state[i] == 3 && brandon.k[i] < 2){
+				int legCheck = 0;
+				for(int j=0; j<4; j++){
+					if (brandon.state[j] !=3) legCheck = 1;
+					}
+				if(legCheck = 1 && stabilityCalc(i, -1).min()) brandon.state[i] = 0;
+			}
+		}
 
 		for (int i=0;i<4;i++){
 			switch(brandon.state[i]){
