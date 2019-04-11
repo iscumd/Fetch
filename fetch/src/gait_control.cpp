@@ -180,6 +180,7 @@ void manualControlCallback(const geometry_msgs::Twist::ConstPtr& msg){
 	// input velocity
 	// add format of multiarray for ease-of-use
 	brandon.velocity = *msg;	// velocity
+	brandon.velocity.linear.x *= 50;
 }
 
 void switchCallback(const std_msgs::UInt8MultiArray::ConstPtr& msg){
