@@ -18,7 +18,7 @@ double minRho, maxRho;
 double idealRho, idealxOrient;
 double forwardStabThresh, backwardStabThresh; //! add param
 double defaultRho, defaultTheta, defaultQ;
-double swingVel, dropVel;
+double liftVel, dropVel;
 
 bool enableLogging;
 double leftRollThresh, rightRollThresh;
@@ -226,7 +226,6 @@ void orientationControlCallback(const geometry_msgs::Quaternion::ConstPtr& msg){
 
 void lift(int leg){ //* state 0
 	brandon.rtq.rho[leg] -= 5;
-	////brandon.k[leg] = -1;
 	brandon.state[leg] = 1;
 	boundCalc(0,0,0);
 }
@@ -234,7 +233,7 @@ void lift(int leg){ //* state 0
 void swing(int leg, float liftHeight){ //* state 1
 	// ensure leg is lifted up to standard height
 	if (brandon.rtq.rho[leg] > liftHeight){
-		brandon.rtq.rho[leg] -= swingVel/FREQ;
+		brandon.rtq.rho[leg] -= liftVel/FREQ;
 		boundCalc(0,0,0);
 	}else if (brandon.rtq.rho[leg] < liftHeight){
 		brandon.rtq.rho[leg] -= 2; //todo adjust for frequency
@@ -242,7 +241,7 @@ void swing(int leg, float liftHeight){ //* state 1
 	}
 	// ensure leg is pulled to the right point on either side, depending on direction
 	if (brandon.rtq.q[leg] < brandon.e.forward(brandon.velocity.linear.x)){
-		brandon.rtq.q[leg] += 3*brandon.velocity.linear.x/FREQ;
+		brandon.rtq.q[leg] += 4*brandon.velocity.linear.x/FREQ;
 	}else brandon.rtq.q[leg] = brandon.e.forward(brandon.velocity.linear.x);
 }
 
@@ -281,7 +280,7 @@ int main(int argc, char **argv){
     ros::Rate loop_rate(FREQ);
 
 	// get ros params
-	n.param("gait_control_frequency", FREQ, 5.0);
+	n.param("gait_control_frequency", FREQ, 20.0);
 	n.param("gait_control_enable_logging", enableLogging, false);
 	n.param("servo_to_com", servoToCOM, 18.5);
 	n.param("min_chassis_rho", minRho, 10.0);
@@ -292,8 +291,8 @@ int main(int argc, char **argv){
 	n.param("default_chassis_rho", idealRho, 25.0);
 	n.param("default_x_orient", idealxOrient, 0.0);
 	n.getParam("leg_boundaries", legBounds);
-	n.param("swing_velocity", swingVel, 30.0);
-	n.param("drop_velocity", dropVel, 30.0);
+	n.param("swing_velocity", liftVel, 30.0);
+	n.param("drop_velocity", dropVel, 50.0);
    
     //Pitch and Roll Thresholds.
 	n.param("left_roll_threshold", leftRollThresh, -30.0);
