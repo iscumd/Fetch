@@ -85,7 +85,7 @@ int main(int argc, char **argv){
 	ros::NodeHandle n;
 
 	n.param("foot_switches_enable_logging", enableLogging, false);
-	n.param("foot_switches_publish_frequency_hz", frequency_hz, 5);
+	n.param("foot_switches_publish_frequency_hz", frequency_hz, 5.0);
 
 	pub = n.advertise<std_msgs::UInt8MultiArray>("foot_switches", 100);
 	ros::spinOnce();
