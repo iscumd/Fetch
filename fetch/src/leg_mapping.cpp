@@ -15,6 +15,8 @@ ros::Publisher footPointPub;
 
 // variables
 ros::Time startTime;
+ros::Duration runTimeTotal;
+int loopCount;
 // params
 double upperLeg;
 double lowerLeg;
@@ -75,16 +77,21 @@ void rtqCallback(const fetch::RhoThetaQArray::ConstPtr& msg)
 		backAngle = normalizeAngle(backAngle, 120, 180); // TODO: set up servo angle origin params
 		servoAngle.data.push_back(backAngle);
 
-		if(enableLogging) ROS_INFO("LM:\tleg [%i]\tpoints:\tx:[%f]\tz:[%f]", i, point.x, point.z);
-		if(enableLogging) ROS_INFO("LM:\tleg [%i]\tangles:\tfront:[%f]\trear:[%f]", i, frontAngle, backAngle);
+		if(enableLogging) {
+			ROS_INFO("LM:\tleg [%i]\tpoints:\tx:[%f]\tz:[%f]", i, point.x, point.z);
+			ROS_INFO("LM:\tleg [%i]\tangles:\tfront:[%f]\trear:[%f]", i, frontAngle, backAngle);
+		}
 	}; 
 	footPointPub.publish(footPoint);
 	servoAnglePub.publish(servoAngle);
  
 	if(enableLogging){
+		loopCount++;
 		ros::Duration d = ros::Time::now() - startTime;
    		double secs = d.toSec();
-		ROS_INFO("LM:\texec_time:\t[%f]", secs);
+		runTimeTotal += d;
+		double totalTime = runTimeTotal.toSec();
+		ROS_INFO("LM:\texec_time:\t[%f]\tav_time:\t[%f]", secs, totalTime/loopCount);
 		}
 }
 
@@ -101,7 +108,7 @@ int main(int argc, char **argv){
 	footPointPub = n.advertise<geometry_msgs::Polygon>("foot_position", 5);
 
 	ros::Subscriber rtqSub = n.subscribe("gait_control", 5, rtqCallback);
-
+	int loopCount = 0;
 	ros::spin();
 
 	return 0;
