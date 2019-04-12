@@ -185,6 +185,10 @@ add_executable(imu src/imu.cpp)
 add_dependencies(imu ${PROJECT_NAME}_generate_messages_cpp)
 target_link_libraries(imu ${catkin_LIBRARIES} robotcontrol)
 
+add_executable(test_up_and_down src/test_up_and_down.cpp)
+add_dependencies(test_up_and_down ${PROJECT_NAME}_generate_messages_cpp)
+target_link_libraries(test_up_and_down ${catkin_LIBRARIES})
+
 #############
 ## Install ##
 #############
