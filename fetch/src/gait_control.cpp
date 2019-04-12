@@ -94,9 +94,14 @@ robot brandon;
 int sign(float num){ return (num > 0) - (num < 0);}
 
 void boundCalc(int leg, float rho, float theta){
+	// make sure rho is an acceptable value first, limit it otherwise
+	if (rho > maxRho) brandon.rtq.rho[leg] = maxRho; // upper limit
+	if (rho < minRho) brandon.rtq.rho[leg] = minRho; // lower limit
+
+	// for now just define them as needed
+	// in the future this should have dynamic calculations for the bounds
 	brandon.e.plus = 10;
 	brandon.e.minus = -10;
-	// also limit rho before this
 }
 
 stabMargin stabilityCalc(int testLegLift, int testLegDrop){
@@ -117,15 +122,17 @@ stabMargin stabilityCalc(int testLegLift, int testLegDrop){
 	localFootPos.points[2].x -= servoToCOM*cos(brandon.chassisXTheta);
 	localFootPos.points[3].x -= servoToCOM*cos(brandon.chassisXTheta);
 
-	// set test lift leg to zero
+	// assume test lift leg is in the air
 	if(testLegLift != -1) localFootSw.data[testLegLift] = 0;
-	// set test drop leg to one
+
+	// assume test lift leg is on the ground
 	if(testLegDrop != -1) localFootSw.data[testLegDrop] = 1;
 
 	for(int i=0;i<3;i++){
+
 		int j;
-		if (i < 3) j = i+1;
-		else j = 0;
+		if (i < 3) j = i+1; // compare adjacent legs () legs on opposite sides of the robot L/R
+		else j = 0; // loop back to compare first to last points
 
 		if(localFootSw.data[i] != 0 && localFootSw.data[j] != 0){
 			sHolder = (localFootPos.points[i].x + localFootPos.points[j].x) / 2;
@@ -138,6 +145,7 @@ stabMargin stabilityCalc(int testLegLift, int testLegDrop){
 
 void orientAdjust(float xdir, float ydir){
 	//* set x/y dir as 0 if not adjusting in that direction
+	// note they are scaled to a lifting and dropping velocity (cm/sec)
 	// sign points to direction adjusting TO, not the way you are falling
 	//! + is right? - is left? ethan should confirm
 	brandon.rtq.rho[0] += brandon.footSwitch.data[0] * (-xdir - ydir)/FREQ;
@@ -368,18 +376,17 @@ int main(int argc, char **argv){
 
 		for (int i=0;i<4;i++){
 			switch(brandon.state[i]){
-				//* 0 for swing function 1 for stride function
 
-			case 0:
+			case 0: // do you even lift bro?
 				lift(i);
 
-			case 1:
+			case 1: // Schwing!
 				swing(i, 10);
 
 			case 2:
-				drop(i);
+				drop(i); // Don't drop the soap, drop your foot
 			
-			case 3:
+			case 3: // Running on a dream.
 				stride(i);
 
 			};
