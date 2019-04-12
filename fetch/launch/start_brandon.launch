@@ -31,6 +31,8 @@
     <node pkg="fetch" type="foot_switches" name="foot_switches" output="screen"/>
 
     <!-- foot_servos -->
+	<param name="foot_servos_lower_angle" value="0" />
+	<param name="foot_servos_upper_angle" value="180" />
     <!-- turn on onboard power for testing with smaller servo -->
 	<param name="foot_servos_use_onboard_power" value="false" /> 
     <!-- Use `sudo -E` to run as root, preserving environment variables. -->
