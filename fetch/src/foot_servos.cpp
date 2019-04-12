@@ -66,7 +66,7 @@ int move_servo(int channel, float pulse_width_ms){
 	return 0;
 }
 
-void pulseWidthCallback(const std_msgs::Float32MultiArray::ConstPtr& msg){
+void servoAnglesCallback(const std_msgs::Float32MultiArray::ConstPtr& msg){
 	//https://gist.github.com/alexsleat/1372845/7e39518cfa12ac91aca4378843e55862eb9ed41d
 	int i = 0;
 	for(std::vector<float>::const_iterator it = msg->data.begin(); it != msg->data.end(); ++it)
@@ -97,7 +97,7 @@ int main(int argc, char **argv){
 	for(int i = 0; i < number_of_channels; i++){
 		servo_angles.push_back(midpoint_angle);
 	}
-	ros::Subscriber pulseWidthSub = n.subscribe("foot/pulse_width_ms", 5, pulseWidthCallback);
+	ros::Subscriber servoAnglesSub = n.subscribe("leg_mapping", 5, servoAnglesCallback);
 	ros::spinOnce();
 
 	if(board_init()) return -1;
