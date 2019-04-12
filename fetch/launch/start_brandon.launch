@@ -27,7 +27,8 @@
 	<node pkg="fetch" type="gait_control" name="gait_control" output="screen"/>
 	<node pkg="fetch" type="leg_mapping" name="leg_mapping" output="screen"/>
 
-    <!-- foot_switches --> 
+    <!-- foot_switches -->
+	<param name="foot_switches_publish_frequency_hz" value="20.0" />
     <node pkg="fetch" type="foot_switches" name="foot_switches" output="screen"/>
 
     <!-- foot_servos -->
