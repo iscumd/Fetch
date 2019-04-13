@@ -22,15 +22,17 @@ int main(int argc, char **argv){
 
 	ros::Subscriber joystickSub = n.subscribe("joystick/xinput", 5, joystickCallback);
 
-    double angle = 180;
+    double angle = 30;
+    double angleAdd = 120;
     int down = 0;
 	ros::Rate loopRate(frequency_hz);
 	while(ros::ok()) {
 		ros::spinOnce();
         if(enableMovement){
 	        std_msgs::Float32MultiArray servoAngle;
-            for(int i = 0; i < 8; i++){
-                servoAngle.data.push_back(angle * down);
+            for(int i = 0; i < 4; i++){
+                servoAngle.data.push_back(angle + angleAdd * down);
+                servoAngle.data.push_back(angle + angleAdd * !down);
             }
 	        servoAnglePub.publish(servoAngle);
         }
