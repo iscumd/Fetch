@@ -57,7 +57,7 @@ void rtqCallback(const fetch::RhoThetaQArray::ConstPtr& msg)
 		legTheta = atan2(rtq.q[i], rtq.rho[i]) + rtq.theta[i] + 3*PI/2;	// angle of triangle
 
 		//* angles are simply the polar angle +/- the angle of the triangle formed
-		thetaOffset = acos(((upperLeg*upperLeg + legRho*legRho - lowerLeg*lowerLeg) / (2*upperLeg*legRho))/PI);
+		thetaOffset = acos((upperLeg*upperLeg + legRho*legRho - lowerLeg*lowerLeg) / (2*upperLeg*legRho));
 
 		point.x = legRho*cos(legTheta);
 		point.z = legRho*sin(legTheta);
