@@ -15,6 +15,7 @@
 double FREQ;
 
 double minRho, maxRho;
+double innerE, outerE;
 double idealRho, idealxOrient;
 double forwardStabThresh, backwardStabThresh; //! add param
 double defaultRho, defaultTheta, defaultQ;
@@ -100,8 +101,13 @@ void boundCalc(int leg, float rho, float theta){
 
 	// for now just define them as needed
 	// in the future this should have dynamic calculations for the bounds
-	brandon.e.plus = 10;
-	brandon.e.minus = -10;
+	if (leg <= 1){
+	brandon.e.plus = outerE;
+	brandon.e.minus = -innerE;
+	}else{
+	brandon.e.plus = innerE;
+	brandon.e.minus = -outerE;
+	}
 }
 
 stabMargin stabilityCalc(int testLegLift, int testLegDrop){
@@ -291,9 +297,11 @@ int main(int argc, char **argv){
 	n.param("gait_control_frequency", FREQ, 20.0);
 	n.param("gait_control_enable_logging", enableLogging, false);
 	n.param("servo_to_com", servoToCOM, 18.5);
-	n.param("min_chassis_rho", minRho, 10.0);
+	n.param("min_chassis_rho", minRho, 12.0);
 	n.param("max_chassis_rho", maxRho, 30.0);
-	n.param("default_leg_rho", defaultRho, 20.0);
+	n.param("outer_e_bound", outerE, 15.0);
+	n.param("inner_e_bound", innerE, 15.0);
+	n.param("default_leg_rho", defaultRho, 25.0);
 	n.param("default_leg_theta", defaultTheta, 0.0);
 	n.param("default_leg_q", defaultQ, 0.0);
 	n.param("default_chassis_rho", idealRho, 25.0);
