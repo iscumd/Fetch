@@ -6,12 +6,6 @@
 
 ros::Publisher manualPub;
 
-bool flipForwardBackward = false;
-bool flipLeftRight = false;
-
-double speedMultiplier;
-double turnMultiplier;
-
 bool enableLogging;
 
 void joystickCallback(const isc_joy::xinput::ConstPtr& joy){	

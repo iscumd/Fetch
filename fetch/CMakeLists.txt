@@ -181,6 +181,10 @@ target_link_libraries(${PROJECT_NAME}_manual_control ${catkin_LIBRARIES})
 # add_dependencies(orientation_control ${PROJECT_NAME}_generate_messages_cpp)
 # target_link_libraries(orientation_control ${catkin_LIBRARIES})
 
+add_executable(test_up_and_down src/test_up_and_down.cpp)
+add_dependencies(test_up_and_down ${PROJECT_NAME}_generate_messages_cpp)
+target_link_libraries(test_up_and_down ${catkin_LIBRARIES})
+
 #############
 ## Install ##
 #############
