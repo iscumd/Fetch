@@ -16,7 +16,6 @@ double FREQ;
 
 double minRho, maxRho;
 double innerE, outerE;
-double idealRho, idealxOrient;
 double forwardStabilityThreshold, backwardStabilityThreshold;
 double defaultRho, defaultTheta, defaultQ;
 double liftVel, dropVel;
@@ -85,6 +84,15 @@ public:
 
 	stabMargin stability;
 	bounds e;
+
+	robot() {
+		footSwitch = std_msgs::UInt8MultiArray();
+		orientation = geometry_msgs::Quaternion();
+		velocity = geometry_msgs::Twist();
+		chassisXTheta = defaultTheta;
+		chassisRho = defaultRho;
+		legRef = 0;
+	}
 };
 
 robot brandon;
@@ -304,8 +312,8 @@ int main(int argc, char **argv){
 	n.param("default_leg_rho", defaultRho, 25.0);
 	n.param("default_leg_theta", defaultTheta, 0.0);
 	n.param("default_leg_q", defaultQ, 0.0);
-	n.param("default_chassis_rho", idealRho, 25.0);
-	n.param("default_x_orient", idealxOrient, 0.0);
+	n.param("default_chassis_rho", defaultRho, 25.0);
+	n.param("default_x_orient", defaultTheta, 0.0);
 	n.getParam("leg_boundaries", legBounds);
 	n.param("swing_velocity", liftVel, 30.0);
 	n.param("drop_velocity", dropVel, 50.0);
@@ -337,6 +345,8 @@ int main(int argc, char **argv){
 				if (brandon.state[i] != 3) brandon.state[i] = 2;
 			}
 		}else{
+
+			heightAdjust(brandon.chassisRho); // keep robot height at desired level
 
 			brandon.stability = stabilityCalc(-1,-1); // update stability margins at the beginning of each loop
 			//! all decisions need to check stability first
