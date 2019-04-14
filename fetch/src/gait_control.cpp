@@ -40,12 +40,26 @@ public:
 		else return abs(minus); 
 	}
 	float forward(float vel){
-		if (vel >= 0) return plus;
-		else return minus;
+		if (vel <= 0) {
+			return plus;
+			if(enableLogging) ROS_INFO("stability margin forward returned plus");
+		}
+		else
+		{
+			return minus;
+			if(enableLogging) ROS_INFO("stability margin forwars returned minus");
+		}
 	}
 	float reverse(float vel){
-		if (vel >= 0) return minus;
-		else return plus;
+		if (vel < 0) {
+			return minus;
+			if(enableLogging) ROS_INFO("stability margin reverse returned minus");
+		}
+		else
+		{
+			return plus;
+			if(enableLogging) ROS_INFO("stability margin reverse returned plus");
+		}
 	}
 };
 
@@ -95,6 +109,7 @@ public:
 		chassisXTheta = defaultTheta;
 		chassisRho = defaultRho;
 		legRef = 0;
+		stability = stabMargin();
 	}
 };
 
@@ -165,7 +180,7 @@ stabMargin stabilityCalc(int testLegLift, int testLegDrop){
 			else if(sHolder < stab.minus) stab.minus = sHolder;
 		}
 	}
-	if(enableLogging) ROS_INFO("GC:\tstabilityCalc\tplus:\t[%f]\tminus:\t[%f]", stab.plus, stab.minus);
+	if(enableLogging) ROS_INFO("GC:\tstabilityCalc\tplus:\t[%f]\tminus:\t[%f]\tforward:\t[%f]\treverse:\t[%f]", stab.plus, stab.minus, stab.forward(brandon.velocity.linear.x), stab.reverse(brandon.velocity.linear.x));
 	return stab;
 };
 
@@ -370,7 +385,7 @@ int main(int argc, char **argv){
 	while(ros::ok()){
 		ros::spinOnce();
 
-		if (brandon.velocity.linear.x == 0){
+		if (abs(brandon.velocity.linear.x) < .1){
 			if(enableLogging) ROS_INFO("GC:\tno velocity given, no change");
 			for(int i = 0; i<4; i++) {
 				if (brandon.footSwitch.data[i] == false) brandon.state[i] = DROP;
@@ -389,8 +404,8 @@ int main(int argc, char **argv){
 			if (brandon.stability.forward(brandon.velocity.linear.x) < forwardStabilityThreshold){
 				if(enableLogging) ROS_INFO("GC:\tforward stability out of tolerance by [%f]", forwardStabilityThreshold - brandon.stability.forward(brandon.velocity.linear.x));
 				
-				for(int i=0; i < 1; i ++){
-					if (brandon.state[brandon.forwardLeg[i]] != SWING)
+				for(int i=0; i < 2; i++){
+					if (brandon.state[brandon.forwardLeg[i]] != STRIDE)
 					{ // if not in stride state
 						if (stabilityCalc(-1, brandon.forwardLeg[i]).forward(brandon.velocity.linear.x) > forwardStabilityThreshold)
 						{
