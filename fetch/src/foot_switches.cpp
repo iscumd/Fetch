@@ -38,6 +38,7 @@ void publish_message(){
 	buttons.at(1) = button1_volatile;
 	buttons.at(2) = button2_volatile;
 	buttons.at(3) = button3_volatile;
+	if(enableLogging) ROS_INFO("%i %i %i %i", buttons.at(0), buttons.at(1), buttons.at(2), buttons.at(3));
 	std_msgs::UInt8MultiArray msg;
 	msg.data = buttons;
 	pub.publish(msg);
@@ -88,7 +89,6 @@ int main(int argc, char **argv){
 	n.param("foot_switches_publish_frequency_hz", frequency_hz, 5.0);
 
 	pub = n.advertise<std_msgs::UInt8MultiArray>("foot_switches", 100);
-	ros::spinOnce();
 
 	if(board_init()) return -1;
 
@@ -102,7 +102,6 @@ int main(int argc, char **argv){
 	button2_volatile = rc_button_get_state(BUTTON_PIN_BACK_LEFT);
 	button3_volatile = rc_button_get_state(BUTTON_PIN_BACK_RIGHT);
 	publish_message();
-	ros::spinOnce();
 	
 	rc_button_set_callbacks(BUTTON_PIN_FRONT_LEFT, __on_front_left_press, __on_front_left_release);
 	rc_button_set_callbacks(BUTTON_PIN_FRONT_RIGHT, __on_front_right_press, __on_front_right_release);
