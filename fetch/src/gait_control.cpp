@@ -241,22 +241,22 @@ void orientationControlCallback(const fetch::OrientationRPY::ConstPtr& msg){
 	brandon.orientation = *msg;
 	
 	if(brandon.orientation.pitch > forwardPitchThresh){
-		//if(enableLogging) ROS_INFO("GC:\torientCB\tstuff:\t[%f] things", insert thing here);
+		if(enableLogging) ROS_INFO("GC:\torientCB\tforwardPitchThresh exceeded:\troll:\t[%f]", brandon.orientation.pitch);
 		orientAdjust(-1,0); 
 	}
 
 	if(brandon.orientation.pitch < backwardPitchThresh){
-		//if(enableLogging) ROS_INFO("GC:\torientCB\tstuff:\t[%f] things", insert thing here);
+		if(enableLogging) ROS_INFO("GC:\torientCB\tbackwardPitchThresh exceeded:\troll:\t[%f]", brandon.orientation.pitch);
 		orientAdjust(1,0);
 	}
 
 	if(brandon.orientation.roll < leftRollThresh){
-		//if(enableLogging) ROS_INFO("GC:\torientCB\tstuff:\t[%f] things", insert thing here);
+		if(enableLogging) ROS_INFO("GC:\torientCB\tleftRollThresh exceeded:\troll:\t[%f]", brandon.orientation.roll);
 		orientAdjust(0,1);
 	}
 
 	if(brandon.orientation.roll > rightRollThresh){
-		//if(enableLogging) ROS_INFO("GC:\torientCB\tstuff:\t[%f] things", insert thing here);
+		if(enableLogging) ROS_INFO("GC:\torientCB\trightRollThresh exceeded:\troll:\t[%f]", brandon.orientation.roll);
 		orientAdjust(0,-1); 
 	}
 }	
@@ -367,7 +367,7 @@ int main(int argc, char **argv){
 		ros::spinOnce();
 
 		if (brandon.velocity.linear.x == 0){
-			ROS_INFO("5");
+			if(enableLogging) ROS_INFO("GC:\tno velocity given, no change");
 			for(int i = 0; i<4; i++) {
 				if (brandon.state[i] != 3) brandon.state[i] = 2;
 			}
@@ -439,27 +439,27 @@ int main(int argc, char **argv){
 					}
 				}
 			}
+		};
+		// act on set states for each leg
+		for (int i=0;i<4;i++){
+			switch(brandon.state[i]){
 
-			for (int i=0;i<4;i++){
-				switch(brandon.state[i]){
+			case LIFT: // do you even lift bro?
+				lift(i);
+				if(enableLogging) ROS_INFO("GC:\tlifting leg \t[%i]", i);
 
-				case LIFT: // do you even lift bro?
-					lift(i);
-					if(enableLogging) ROS_INFO("GC:\tlifting leg \t[%i]", i);
+			case SWING: // Schwing!
+				swing(i, minRho);
+				if(enableLogging) ROS_INFO("GC:\tswinging leg \t[%i]", i);
 
-				case SWING: // Schwing!
-					swing(i, minRho);
-					if(enableLogging) ROS_INFO("GC:\tswinging leg \t[%i]", i);
+			case DROP:
+				drop(i); // Don't drop the soap, drop your foot
+				if(enableLogging) ROS_INFO("GC:\tdropping leg \t[%i]", i);
+			
+			case STRIDE: // Running on a dream.
+				stride(i);
+				if(enableLogging) ROS_INFO("GC:\tstriding leg \t[%i]", i);
 
-				case DROP:
-					drop(i); // Don't drop the soap, drop your foot
-					if(enableLogging) ROS_INFO("GC:\tdropping leg \t[%i]", i);
-				
-				case STRIDE: // Running on a dream.
-					stride(i);
-					if(enableLogging) ROS_INFO("GC:\tstriding leg \t[%i]", i);
-
-				};
 			};
 		};
 		gaitPub.publish(brandon.rtq);
