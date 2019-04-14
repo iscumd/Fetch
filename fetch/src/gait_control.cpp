@@ -175,7 +175,7 @@ void heightAdjust(float height){
 	int legCount = 0;
 	float avHeight = 0;
 	float diff;
-	for (int i; i<4; i++){
+	for (int i = 0; i<4; i++){
 		if (brandon.footSwitch.data[i] == 1){
 			legCount++ ;
 			avHeight += brandon.rtq.rho[i];
@@ -184,10 +184,10 @@ void heightAdjust(float height){
 	avHeight = avHeight/legCount;
 	diff = height - avHeight;
 
-	brandon.rtq.q[0] += brandon.footSwitch.data[0] * diff / FREQ;
-	brandon.rtq.q[1] += brandon.footSwitch.data[1] * diff / FREQ;
-	brandon.rtq.q[2] += brandon.footSwitch.data[2] * diff / FREQ;
-	brandon.rtq.q[3] += brandon.footSwitch.data[3] * diff / FREQ;
+	brandon.rtq.rho[0] += brandon.footSwitch.data[0] * diff / FREQ;
+	brandon.rtq.rho[1] += brandon.footSwitch.data[1] * diff / FREQ;
+	brandon.rtq.rho[2] += brandon.footSwitch.data[2] * diff / FREQ;
+	brandon.rtq.rho[3] += brandon.footSwitch.data[3] * diff / FREQ;
 	boundCalc();
 }
 
@@ -334,15 +334,11 @@ int main(int argc, char **argv){
 	ros::Subscriber footSub = n.subscribe("foot_position", 5, footCallback);
 	ros::Subscriber eulerSub = n.subscribe("orientation_control", 5, orientationControlCallback);
 	ros::Subscriber manualControlSub = n.subscribe("manual_control", 5, manualControlCallback);
-	ROS_INFO("1");
 	// initialize leg positions
 	footZero();
-	ROS_INFO("2");
 
 	while(ros::ok()){
-		ROS_INFO("3");
 		ros::spinOnce();
-		ROS_INFO("4");
 
 		if (brandon.velocity.linear.x == 0){
 			ROS_INFO("5");
@@ -350,13 +346,10 @@ int main(int argc, char **argv){
 				if (brandon.state[i] != 3) brandon.state[i] = 2;
 			}
 		}else{
-			ROS_INFO("6");
 
 			heightAdjust(brandon.chassisRho); // keep robot height at desired level
-			ROS_INFO("7");
 
 			brandon.stability = stabilityCalc(-1,-1); // update stability margins at the beginning of each loop
-			ROS_INFO("8");
 			//! all decisions need to check stability first
 
 			//*stability margin
