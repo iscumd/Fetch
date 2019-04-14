@@ -17,7 +17,7 @@ double FREQ;
 double minRho, maxRho;
 double innerE, outerE;
 double idealRho, idealxOrient;
-double forwardStabThresh, backwardStabThresh; //! add param
+double forwardStabilityThreshold, backwardStabilityThreshold;
 double defaultRho, defaultTheta, defaultQ;
 double liftVel, dropVel;
 
@@ -309,6 +309,7 @@ int main(int argc, char **argv){
 	n.getParam("leg_boundaries", legBounds);
 	n.param("swing_velocity", liftVel, 30.0);
 	n.param("drop_velocity", dropVel, 50.0);
+	n.param("forward_stability_threshold", forwardStabilityThreshold, 5.0);
    
     //Pitch and Roll Thresholds.
 	n.param("left_roll_threshold", leftRollThresh, -30.0);
@@ -342,10 +343,10 @@ int main(int argc, char **argv){
 
 			//*stability margin
 			// S+
-			if (brandon.stability.forward(brandon.velocity.linear.x) < forwardStabThresh){
+			if (brandon.stability.forward(brandon.velocity.linear.x) < forwardStabilityThreshold){
 				for(int i=0; i < 1; i ++){
 					if (brandon.state[brandon.forwardLeg[i]] != 3){
-						if (stabilityCalc(-1, brandon.forwardLeg[i]).forward(brandon.velocity.linear.x) > forwardStabThresh) brandon.state[brandon.forwardLeg[i]] = 2;
+						if (stabilityCalc(-1, brandon.forwardLeg[i]).forward(brandon.velocity.linear.x) > forwardStabilityThreshold) brandon.state[brandon.forwardLeg[i]] = 2;
 						else brandon.state[brandon.forwardLeg[i]] = 1;
 					}
 				}
@@ -370,7 +371,7 @@ int main(int argc, char **argv){
 				case 3:
 				brandon.nextLeg = 0;
 			}
-			if(stabilityCalc(brandon.nextLeg, -1).min() > forwardStabThresh) brandon.state[brandon.nextLeg] = 0;
+			if(stabilityCalc(brandon.nextLeg, -1).min() > forwardStabilityThreshold) brandon.state[brandon.nextLeg] = 0;
 			
 			//*k check
 			//	final check, otherwise no state changes necessary
