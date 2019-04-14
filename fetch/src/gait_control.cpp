@@ -192,15 +192,19 @@ void heightAdjust(float height){
 			avHeight += brandon.rtq.rho[i];
 		}
 	}
-	avHeight = avHeight/legCount;
-	diff = height - avHeight;
-	if(enableLogging) ROS_INFO("GC:\theightAdjust\tdiff:\t[%f]\tdelta:\t[%f]", diff, diff / FREQ);
+	if (legCount == 0){
+		if(enableLogging) ROS_INFO("GC:\theightAdjust\tno adjust necessary");
+	}else{
+		avHeight = avHeight/legCount;
+		diff = height - avHeight;
+		if(enableLogging) ROS_INFO("GC:\theightAdjust\tdiff:\t[%f]\tdelta:\t[%f]", diff, diff / FREQ);
 
-	brandon.rtq.rho[0] += brandon.footSwitch.data[0] * diff / FREQ;
-	brandon.rtq.rho[1] += brandon.footSwitch.data[1] * diff / FREQ;
-	brandon.rtq.rho[2] += brandon.footSwitch.data[2] * diff / FREQ;
-	brandon.rtq.rho[3] += brandon.footSwitch.data[3] * diff / FREQ;
-	boundCalc();
+		brandon.rtq.rho[0] += brandon.footSwitch.data[0] * diff / FREQ;
+		brandon.rtq.rho[1] += brandon.footSwitch.data[1] * diff / FREQ;
+		brandon.rtq.rho[2] += brandon.footSwitch.data[2] * diff / FREQ;
+		brandon.rtq.rho[3] += brandon.footSwitch.data[3] * diff / FREQ;
+		boundCalc();
+	}
 }
 
 void footInitialize(){
