@@ -416,12 +416,16 @@ int main(int argc, char **argv){
 				switch (brandon.legRef){
 					case 0:
 					brandon.nextLeg = 2;
+					break;
 					case 1:
 					brandon.nextLeg = 3;
+					break;
 					case 2:
 					brandon.nextLeg = 1;
+					break;
 					case 3:
 					brandon.nextLeg = 0;
+					break;
 				}
 				if(stabilityCalc(brandon.nextLeg, -1).min() > forwardStabilityThreshold)
 				{
