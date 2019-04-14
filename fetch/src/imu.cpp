@@ -15,8 +15,8 @@ int publish_rate_hz;
 
 static void mpu_dmp_callback(void){
 	fetch::OrientationRPY msg;
-	msg.roll = data.dmp_TaitBryan[TB_ROLL_Y]*RAD_TO_DEG;
-	msg.pitch = data.dmp_TaitBryan[TB_PITCH_X]*RAD_TO_DEG;
+	msg.roll = data.dmp_TaitBryan[TB_PITCH_X]*RAD_TO_DEG;
+	msg.pitch = data.dmp_TaitBryan[TB_ROLL_Y]*RAD_TO_DEG;
 	msg.yaw = data.dmp_TaitBryan[TB_YAW_Z]*RAD_TO_DEG;
 	orientationPub.publish(msg);
 }
@@ -37,7 +37,7 @@ int main(int argc, char **argv){
 	
 	rc_mpu_config_t mpu_config = rc_mpu_default_config();
     mpu_config.dmp_sample_rate = publish_rate_hz;
-    mpu_config.orient = ORIENTATION_Y_UP;
+    mpu_config.orient = ORIENTATION_Z_UP;
 	mpu_config.i2c_bus = I2C_BUS;
 	
 	//Initialize MPU
