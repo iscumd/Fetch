@@ -16,7 +16,6 @@ double FREQ;
 
 double minRho, maxRho;
 double innerE, outerE;
-double defaultRho, defaultxOrient;
 double forwardStabilityThreshold, backwardStabilityThreshold;
 double defaultRho, defaultTheta, defaultQ;
 double liftVel, dropVel;
@@ -90,7 +89,7 @@ public:
 		footSwitch = std_msgs::UInt8MultiArray();
 		orientation = geometry_msgs::Quaternion();
 		velocity = geometry_msgs::Twist();
-		chassisXTheta = defaultxOrient;
+		chassisXTheta = defaultTheta;
 		chassisRho = defaultRho;
 		legRef = 0;
 	}
@@ -314,7 +313,7 @@ int main(int argc, char **argv){
 	n.param("default_leg_theta", defaultTheta, 0.0);
 	n.param("default_leg_q", defaultQ, 0.0);
 	n.param("default_chassis_rho", defaultRho, 25.0);
-	n.param("default_x_orient", defaultxOrient, 0.0);
+	n.param("default_x_orient", defaultTheta, 0.0);
 	n.getParam("leg_boundaries", legBounds);
 	n.param("swing_velocity", liftVel, 30.0);
 	n.param("drop_velocity", dropVel, 50.0);
