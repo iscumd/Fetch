@@ -115,7 +115,7 @@ stabMargin stabilityCalc(int testLegLift, int testLegDrop){
 	// if you want just the current state, set testLeg to -1 in the function call
 
 	std_msgs::UInt8MultiArray localFootSw = brandon.footSwitch;
-	geometry_msgs::Polygon localFootPos = brandon.footPosition;
+	fetch::RhoThetaQArray localRTQ = brandon.rtq;
 
 	stabMargin stab;
 	float sHolder = 0;
@@ -123,10 +123,10 @@ stabMargin stabilityCalc(int testLegLift, int testLegDrop){
 	stab.minus = 0;
 
 	// offset servos from center
-	localFootPos.points[0].x += servoToCOM*cos(brandon.chassisXTheta);
-	localFootPos.points[1].x += servoToCOM*cos(brandon.chassisXTheta);
-	localFootPos.points[2].x -= servoToCOM*cos(brandon.chassisXTheta);
-	localFootPos.points[3].x -= servoToCOM*cos(brandon.chassisXTheta);
+	localRTQ.q[0] += servoToCOM*cos(brandon.chassisXTheta);
+	localRTQ.q[1] += servoToCOM*cos(brandon.chassisXTheta);
+	localRTQ.q[2] -= servoToCOM*cos(brandon.chassisXTheta);
+	localRTQ.q[3] -= servoToCOM*cos(brandon.chassisXTheta);
 
 	// assume test lift leg is in the air
 	if(testLegLift != -1) localFootSw.data[testLegLift] = 0;
@@ -141,7 +141,7 @@ stabMargin stabilityCalc(int testLegLift, int testLegDrop){
 		else j = 0; // loop back to compare first to last points
 
 		if(localFootSw.data[i] != 0 && localFootSw.data[j] != 0){
-			sHolder = (localFootPos.points[i].x + localFootPos.points[j].x) / 2;
+			sHolder = (localRTQ.q[i] + localRTQ.q[j]) / 2;
 			if(sHolder > stab.plus) stab.plus = sHolder;
 			else if(sHolder < stab.minus) stab.minus = sHolder;
 		}
@@ -332,13 +332,13 @@ int main(int argc, char **argv){
 	while(ros::ok()){
 		ros::spinOnce();
 
-		brandon.stability = stabilityCalc(-1,-1); // update stability margins at the beginning of each loop
-
 		if (brandon.velocity.linear.x == 0){
 			for(int i = 0; i<4; i++) {
 				if (brandon.state[i] != 3) brandon.state[i] = 2;
 			}
 		}else{
+
+			brandon.stability = stabilityCalc(-1,-1); // update stability margins at the beginning of each loop
 			//! all decisions need to check stability first
 
 			//*stability margin
