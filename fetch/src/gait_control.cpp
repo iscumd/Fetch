@@ -245,12 +245,12 @@ void orientationControlCallback(const fetch::OrientationRPY::ConstPtr& msg){
 	brandon.orientation = *msg;
 	
 	if(brandon.orientation.pitch > forwardPitchThresh){
-		if(enableLogging) ROS_INFO("GC:\torientCB\tforwardPitchThresh exceeded:\troll:\t[%f]", brandon.orientation.pitch);
+		if(enableLogging) ROS_INFO("GC:\torientCB\tforwardPitchThresh exceeded:\tpitch:\t[%f]", brandon.orientation.pitch);
 		orientAdjust(-1,0); 
 	}
 
 	if(brandon.orientation.pitch < backwardPitchThresh){
-		if(enableLogging) ROS_INFO("GC:\torientCB\tbackwardPitchThresh exceeded:\troll:\t[%f]", brandon.orientation.pitch);
+		if(enableLogging) ROS_INFO("GC:\torientCB\tbackwardPitchThresh exceeded:\tpitch:\t[%f]", brandon.orientation.pitch);
 		orientAdjust(1,0);
 	}
 
@@ -303,7 +303,7 @@ void drop(int leg){ //* state 2
 		brandon.rtq.rho[leg] += dropVel/FREQ;
 		boundCalc();
 	}else {
-		brandon.state[leg] = SWING;
+		brandon.state[leg] = STRIDE;
 		brandon.cycleDuration[leg] = ros::Time::now() - brandon.cycleStart[leg];
 		brandon.cycleStart[leg] = ros::Time::now();
 		brandon.legRef = leg;
