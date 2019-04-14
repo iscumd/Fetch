@@ -1,8 +1,8 @@
 #include "ros/ros.h"
-#include "geometry_msgs/Quaternion.h"
 #include "geometry_msgs/Polygon.h"
 #include "geometry_msgs/Twist.h"
 #include "fetch/RhoThetaQArray.h"
+#include "fetch/OrientationRPY.h"
 #include "std_msgs/UInt8MultiArray.h"
 //#include "rc/mpu.h"
 
@@ -64,7 +64,7 @@ class robot{
 public:
 	std_msgs::UInt8MultiArray footSwitch;
 	geometry_msgs::Polygon footPosition;
-	geometry_msgs::Quaternion orientation;
+	fetch::OrientationRPY orientation;
 	geometry_msgs::Twist velocity;
 	
 	ros::Time cycleStart[4];
@@ -87,7 +87,7 @@ public:
 
 	robot() {
 		footSwitch = std_msgs::UInt8MultiArray();
-		orientation = geometry_msgs::Quaternion();
+		orientation = fetch::OrientationRPY();
 		velocity = geometry_msgs::Twist();
 		chassisXTheta = defaultTheta;
 		chassisRho = defaultRho;
@@ -222,25 +222,24 @@ void footCallback(const geometry_msgs::Polygon::ConstPtr& msg){
 	brandon.footPosition = *msg;
 }
 
-void orientationControlCallback(const geometry_msgs::Quaternion::ConstPtr& msg){	
-	//Message reads in Pitch, Roll, Yaw(msg->data.x, msg->data.y, msg->data.z respectively)
+void orientationControlCallback(const fetch::OrientationRPY::ConstPtr& msg){
 	//Pitch should be no greater than |30 degrees| (absolute value)
 	//Roll should be no greater than 
 	brandon.orientation = *msg;
 	
-	if(brandon.orientation.x > forwardPitchThresh){
+	if(brandon.orientation.pitch > forwardPitchThresh){
 		orientAdjust(-1,0); 
 	}
 
-	if(brandon.orientation.x < backwardPitchThresh){
+	if(brandon.orientation.pitch < backwardPitchThresh){
 		orientAdjust(1,0);
 	}
 
-	if(brandon.orientation.y < leftRollThresh){
+	if(brandon.orientation.roll < leftRollThresh){
 		orientAdjust(0,1);
 	}
 
-	if(brandon.orientation.y > rightRollThresh){
+	if(brandon.orientation.roll > rightRollThresh){
 		orientAdjust(0,-1); 
 	}
 }	
