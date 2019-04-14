@@ -100,7 +100,7 @@ int main(int argc, char **argv){
 
 	ros::NodeHandle n;
 
-	n.param("leg_mapping_enable_logging", enableLogging, true);
+	n.param("leg_mapping_enable_logging", enableLogging, false);
 	n.param("leg_mapping_upper_leg", upperLeg, 12.7);
 	n.param("leg_mapping_lower_leg", lowerLeg, 25.4);
 
