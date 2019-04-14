@@ -40,12 +40,26 @@ public:
 		else return abs(minus); 
 	}
 	float forward(float vel){
-		if (vel >= 0) return plus;
-		else return minus;
+		if (vel <= 0) {
+			return plus;
+			if(enableLogging) ROS_INFO("stability margin forward returned plus");
+		}
+		else
+		{
+			return minus;
+			if(enableLogging) ROS_INFO("stability margin forwars returned minus");
+		}
 	}
 	float reverse(float vel){
-		if (vel >= 0) return minus;
-		else return plus;
+		if (vel < 0) {
+			return minus;
+			if(enableLogging) ROS_INFO("stability margin reverse returned minus");
+		}
+		else
+		{
+			return plus;
+			if(enableLogging) ROS_INFO("stability margin reverse returned plus");
+		}
 	}
 };
 
@@ -95,6 +109,7 @@ public:
 		chassisXTheta = defaultTheta;
 		chassisRho = defaultRho;
 		legRef = 0;
+		stability = stabMargin();
 	}
 };
 
