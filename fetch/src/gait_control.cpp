@@ -192,15 +192,19 @@ void heightAdjust(float height){
 			avHeight += brandon.rtq.rho[i];
 		}
 	}
-	avHeight = avHeight/legCount;
-	diff = height - avHeight;
-	if(enableLogging) ROS_INFO("GC:\theightAdjust\tdiff:\t[%f]\tdelta:\t[%f]", diff, diff / FREQ);
+	if (legCount == 0){
+		if(enableLogging) ROS_INFO("GC:\theightAdjust\tno adjust necessary");
+	}else{
+		avHeight = avHeight/legCount;
+		diff = height - avHeight;
+		if(enableLogging) ROS_INFO("GC:\theightAdjust\tdiff:\t[%f]\tdelta:\t[%f]", diff, diff / FREQ);
 
-	brandon.rtq.rho[0] += brandon.footSwitch.data[0] * diff / FREQ;
-	brandon.rtq.rho[1] += brandon.footSwitch.data[1] * diff / FREQ;
-	brandon.rtq.rho[2] += brandon.footSwitch.data[2] * diff / FREQ;
-	brandon.rtq.rho[3] += brandon.footSwitch.data[3] * diff / FREQ;
-	boundCalc();
+		brandon.rtq.rho[0] += brandon.footSwitch.data[0] * diff / FREQ;
+		brandon.rtq.rho[1] += brandon.footSwitch.data[1] * diff / FREQ;
+		brandon.rtq.rho[2] += brandon.footSwitch.data[2] * diff / FREQ;
+		brandon.rtq.rho[3] += brandon.footSwitch.data[3] * diff / FREQ;
+		boundCalc();
+	}
 }
 
 void footInitialize(){
@@ -369,7 +373,7 @@ int main(int argc, char **argv){
 		if (brandon.velocity.linear.x == 0){
 			if(enableLogging) ROS_INFO("GC:\tno velocity given, no change");
 			for(int i = 0; i<4; i++) {
-				if (brandon.state[i] != 3) brandon.state[i] = 2;
+				if (brandon.footSwitch.data[i] == false) brandon.state[i] = DROP;
 			}
 		}
 		else
@@ -447,18 +451,22 @@ int main(int argc, char **argv){
 			case LIFT: // do you even lift bro?
 				lift(i);
 				if(enableLogging) ROS_INFO("GC:\tlifting leg \t[%i]", i);
+				break;
 
 			case SWING: // Schwing!
 				swing(i, minRho);
 				if(enableLogging) ROS_INFO("GC:\tswinging leg \t[%i]", i);
+				break;
 
 			case DROP:
 				drop(i); // Don't drop the soap, drop your foot
 				if(enableLogging) ROS_INFO("GC:\tdropping leg \t[%i]", i);
+				break;
 			
 			case STRIDE: // Running on a dream.
 				stride(i);
 				if(enableLogging) ROS_INFO("GC:\tstriding leg \t[%i]", i);
+				break;
 
 			};
 		};
