@@ -27,6 +27,7 @@
 	<param name="forward_stability_threshold" value="10.0" />
 	<node pkg="fetch" type="gait_control" name="gait_control" output="screen" />
 	<node pkg="fetch" type="leg_mapping" name="leg_mapping" output="screen" />
+	<node pkg="fetch" type="imu" name="imu" output="screen" />
 
     <!-- foot_switches -->
 	<param name="foot_switches_publish_frequency_hz" value="20.0" />
