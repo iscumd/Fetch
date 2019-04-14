@@ -451,18 +451,22 @@ int main(int argc, char **argv){
 			case LIFT: // do you even lift bro?
 				lift(i);
 				if(enableLogging) ROS_INFO("GC:\tlifting leg \t[%i]", i);
+				break;
 
 			case SWING: // Schwing!
 				swing(i, minRho);
 				if(enableLogging) ROS_INFO("GC:\tswinging leg \t[%i]", i);
+				break;
 
 			case DROP:
 				drop(i); // Don't drop the soap, drop your foot
 				if(enableLogging) ROS_INFO("GC:\tdropping leg \t[%i]", i);
+				break;
 			
 			case STRIDE: // Running on a dream.
 				stride(i);
 				if(enableLogging) ROS_INFO("GC:\tstriding leg \t[%i]", i);
+				break;
 
 			};
 		};
