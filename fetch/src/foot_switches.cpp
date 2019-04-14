@@ -8,10 +8,10 @@
 #include <rc/button.h>
 #include <rc/time.h>
 
-#define  BUTTON_PIN_FRONT_LEFT	1,25
-#define  BUTTON_PIN_FRONT_RIGHT	1,17
-#define  BUTTON_PIN_BACK_LEFT	3,20
-#define  BUTTON_PIN_BACK_RIGHT	3,17
+#define  BUTTON_PIN_FRONT_LEFT	1,17
+#define  BUTTON_PIN_FRONT_RIGHT	3,17
+#define  BUTTON_PIN_BACK_LEFT	1,25
+#define  BUTTON_PIN_BACK_RIGHT	3,20
 
 bool enableLogging;
 double frequency_hz;
