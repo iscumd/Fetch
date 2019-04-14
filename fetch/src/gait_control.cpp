@@ -369,7 +369,7 @@ int main(int argc, char **argv){
 		if (brandon.velocity.linear.x == 0){
 			if(enableLogging) ROS_INFO("GC:\tno velocity given, no change");
 			for(int i = 0; i<4; i++) {
-				if (brandon.state[i] != 3) brandon.state[i] = 2;
+				if (brandon.footSwitch.data[i] == false) brandon.state[i] = DROP;
 			}
 		}
 		else
