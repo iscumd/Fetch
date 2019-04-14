@@ -15,6 +15,7 @@
 double FREQ;
 
 double minRho, maxRho;
+double innerE, outerE;
 double idealRho, idealxOrient;
 double forwardStabThresh, backwardStabThresh; //! add param
 double defaultRho, defaultTheta, defaultQ;
@@ -100,8 +101,13 @@ void boundCalc(int leg, float rho, float theta){
 
 	// for now just define them as needed
 	// in the future this should have dynamic calculations for the bounds
-	brandon.e.plus = 10;
-	brandon.e.minus = -10;
+	if (leg <= 1){
+	brandon.e.plus = outerE;
+	brandon.e.minus = -innerE;
+	}else{
+	brandon.e.plus = innerE;
+	brandon.e.minus = -outerE;
+	}
 }
 
 stabMargin stabilityCalc(int testLegLift, int testLegDrop){
@@ -291,9 +297,11 @@ int main(int argc, char **argv){
 	n.param("gait_control_frequency", FREQ, 20.0);
 	n.param("gait_control_enable_logging", enableLogging, false);
 	n.param("servo_to_com", servoToCOM, 18.5);
-	n.param("min_chassis_rho", minRho, 10.0);
+	n.param("min_chassis_rho", minRho, 12.0);
 	n.param("max_chassis_rho", maxRho, 30.0);
-	n.param("default_leg_rho", defaultRho, 20.0);
+	n.param("outer_e_bound", outerE, 15.0);
+	n.param("inner_e_bound", innerE, 15.0);
+	n.param("default_leg_rho", defaultRho, 25.0);
 	n.param("default_leg_theta", defaultTheta, 0.0);
 	n.param("default_leg_q", defaultQ, 0.0);
 	n.param("default_chassis_rho", idealRho, 25.0);
@@ -325,73 +333,75 @@ int main(int argc, char **argv){
 
 		brandon.stability = stabilityCalc(-1,-1); // update stability margins at the beginning of each loop
 
-		//TODO: decision making and state assignment goes here
-		
-		//! all decisions need to check stability first
-		//*set priority list for reacting to certain conditions
+		if (brandon.velocity.linear.x == 0){
+			for(int i = 0; i<4; i++) {
+				if (brandon.state[i] != 3) brandon.state[i] = 2;
+			}
+		}else{
+			//! all decisions need to check stability first
 
-		//*stability margin
-		// S+
-		if (brandon.stability.forward(brandon.velocity.linear.x) < forwardStabThresh){
-			for(int i=0; i < 1; i ++){
-				if (brandon.state[brandon.forwardLeg[i]] != 3){
-					if (stabilityCalc(-1, brandon.forwardLeg[i]).forward(brandon.velocity.linear.x) > forwardStabThresh) brandon.state[brandon.forwardLeg[i]] = 2;
-					else brandon.state[brandon.forwardLeg[i]] = 1;
+			//*stability margin
+			// S+
+			if (brandon.stability.forward(brandon.velocity.linear.x) < forwardStabThresh){
+				for(int i=0; i < 1; i ++){
+					if (brandon.state[brandon.forwardLeg[i]] != 3){
+						if (stabilityCalc(-1, brandon.forwardLeg[i]).forward(brandon.velocity.linear.x) > forwardStabThresh) brandon.state[brandon.forwardLeg[i]] = 2;
+						else brandon.state[brandon.forwardLeg[i]] = 1;
+					}
 				}
 			}
-		}
 
-		// s- : 	only big issue with slope probably
-		
-		//*phase between legs
-		// ... 0,2,1,3 ...
-		// try to keep duty cycle/time delay between legs
-		// elength = velocity * CT * DutyRatio
-		//// DR = 1 - phi/ something?	
-		//// (1-DR)*avCT
-		// compare average cycle time and start times
-		switch (brandon.legRef){
-			case 0:
-			brandon.nextLeg = 2;
-			case 1:
-			brandon.nextLeg = 3;
-			case 2:
-			brandon.nextLeg = 1;
-			case 3:
-			brandon.nextLeg = 0;
-		}
-		if(stabilityCalc(brandon.nextLeg, -1).min() > forwardStabThresh) brandon.state[brandon.nextLeg] = 0;
-		
-		//*k check
-		//	final check, otherwise no state changes necessary
-		for (int i=0;i<4;i++){
-			if (brandon.state[i] == 3 && brandon.k[i] < 2){
-				int legCheck = 0;
-				for(int j=0; j<4; j++){
-					if (brandon.state[j] !=3) legCheck = 1;
-					}
-				if(legCheck = 1 && stabilityCalc(i, -1).min()) brandon.state[i] = 0;
-			}
-		}
-
-		for (int i=0;i<4;i++){
-			switch(brandon.state[i]){
-
-			case 0: // do you even lift bro?
-				lift(i);
-
-			case 1: // Schwing!
-				swing(i, 10);
-
-			case 2:
-				drop(i); // Don't drop the soap, drop your foot
+			// s- : 	only big issue with slope probably
 			
-			case 3: // Running on a dream.
-				stride(i);
+			//*phase between legs
+			// ... 0,2,1,3 ...
+			// try to keep duty cycle/time delay between legs
+			// elength = velocity * CT * DutyRatio
+			//// DR = 1 - phi/ something?	
+			//// (1-DR)*avCT
+			// compare average cycle time and start times
+			switch (brandon.legRef){
+				case 0:
+				brandon.nextLeg = 2;
+				case 1:
+				brandon.nextLeg = 3;
+				case 2:
+				brandon.nextLeg = 1;
+				case 3:
+				brandon.nextLeg = 0;
+			}
+			if(stabilityCalc(brandon.nextLeg, -1).min() > forwardStabThresh) brandon.state[brandon.nextLeg] = 0;
+			
+			//*k check
+			//	final check, otherwise no state changes necessary
+			for (int i=0;i<4;i++){
+				if (brandon.state[i] == 3 && brandon.k[i] < 2){
+					int legCheck = 0;
+					for(int j=0; j<4; j++){
+						if (brandon.state[j] !=3) legCheck = 1;
+						}
+					if(legCheck = 1 && stabilityCalc(i, -1).min()) brandon.state[i] = 0;
+				}
+			}
 
+			for (int i=0;i<4;i++){
+				switch(brandon.state[i]){
+
+				case 0: // do you even lift bro?
+					lift(i);
+
+				case 1: // Schwing!
+					swing(i, 10);
+
+				case 2:
+					drop(i); // Don't drop the soap, drop your foot
+				
+				case 3: // Running on a dream.
+					stride(i);
+
+				};
 			};
 		};
-
 		gaitPub.publish(brandon.rtq);
 
 		if(enableLogging) ROS_INFO("Execution time: [%f]", loop_rate.cycleTime().toSec());
