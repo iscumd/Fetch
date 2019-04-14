@@ -83,7 +83,7 @@ public:
 	int rearLeg[2];
 
 	stabMargin stability;
-	bounds e;
+	bounds e[4];
 
 	robot() {
 		footSwitch = std_msgs::UInt8MultiArray();
@@ -102,19 +102,21 @@ robot brandon;
 
 int sign(float num){ return (num > 0) - (num < 0);}
 
-void boundCalc(int leg, float rho, float theta){
-	// make sure rho is an acceptable value first, limit it otherwise
-	if (rho > maxRho) brandon.rtq.rho[leg] = maxRho; // upper limit
-	if (rho < minRho) brandon.rtq.rho[leg] = minRho; // lower limit
+void boundCalc(){
+	for (int leg = 0; leg < 4; leg++){
+		// make sure rho is an acceptable value first, limit it otherwise
+		if (brandon.rtq.rho[leg] > maxRho) brandon.rtq.rho[leg] = maxRho; // upper limit
+		if (brandon.rtq.rho[leg] < minRho) brandon.rtq.rho[leg] = minRho; // lower limit
 
-	// for now just define them as needed
-	// in the future this should have dynamic calculations for the bounds
-	if (leg <= 1){
-	brandon.e.plus = outerE;
-	brandon.e.minus = -innerE;
-	}else{
-	brandon.e.plus = innerE;
-	brandon.e.minus = -outerE;
+		// for now just define them as needed
+		// in the future this should have dynamic calculations for the bounds
+		if (leg <= 1){
+		brandon.e[leg].plus = outerE;
+		brandon.e[leg].minus = -innerE;
+		}else{
+		brandon.e[leg].plus = innerE;
+		brandon.e[leg].minus = -outerE;
+		}
 	}
 }
 
@@ -166,7 +168,7 @@ void orientAdjust(float xdir, float ydir){
 	brandon.rtq.rho[1] += brandon.footSwitch.data[1] * (-xdir + ydir)/FREQ;
 	brandon.rtq.rho[2] += brandon.footSwitch.data[2] * (xdir - ydir)/FREQ;
 	brandon.rtq.rho[3] += brandon.footSwitch.data[3] * (xdir + ydir)/FREQ;
-	boundCalc(0,0,0);
+	boundCalc();
 }
 
 void heightAdjust(float height){
@@ -186,14 +188,14 @@ void heightAdjust(float height){
 	brandon.rtq.q[1] += brandon.footSwitch.data[1] * diff / FREQ;
 	brandon.rtq.q[2] += brandon.footSwitch.data[2] * diff / FREQ;
 	brandon.rtq.q[3] += brandon.footSwitch.data[3] * diff / FREQ;
-	boundCalc(0,0,0);
+	boundCalc();
 }
 
 void footZero(){
 	for (int i =0; i < 4; i++){
-		brandon.rtq.rho[i]=defaultRho;
-		brandon.rtq.theta[i]=defaultTheta;
-		brandon.rtq.q[i]=defaultQ;
+		brandon.rtq.rho.push_back(defaultRho);
+		brandon.rtq.theta.push_back(defaultTheta);
+		brandon.rtq.q.push_back(defaultQ);
 	}
 }
 
@@ -249,28 +251,28 @@ void orientationControlCallback(const geometry_msgs::Quaternion::ConstPtr& msg){
 void lift(int leg){ //* state 0
 	brandon.rtq.rho[leg] -= 5;
 	brandon.state[leg] = 1;
-	boundCalc(0,0,0);
+	boundCalc();
 }
 
 void swing(int leg, float liftHeight){ //* state 1
 	// ensure leg is lifted up to standard height
 	if (brandon.rtq.rho[leg] > liftHeight){
 		brandon.rtq.rho[leg] -= liftVel/FREQ;
-		boundCalc(0,0,0);
+		boundCalc();
 	}else if (brandon.rtq.rho[leg] < liftHeight){
-		brandon.rtq.rho[leg] = liftHeight; //todo adjust for frequency
-		boundCalc(0,0,0);
+		brandon.rtq.rho[leg] = liftHeight;
+		boundCalc();
 	}
 	// ensure leg is pulled to the right point on either side, depending on direction
-	if (brandon.rtq.q[leg] < brandon.e.forward(brandon.velocity.linear.x)){
+	if (brandon.rtq.q[leg] < brandon.e[leg].forward(brandon.velocity.linear.x)){
 		brandon.rtq.q[leg] += 4*brandon.velocity.linear.x/FREQ;
-	}else brandon.rtq.q[leg] = brandon.e.forward(brandon.velocity.linear.x);
+	}else brandon.rtq.q[leg] = brandon.e[leg].forward(brandon.velocity.linear.x);
 }
 
 void drop(int leg){ //* state 2
 	if (brandon.footSwitch.data[leg] == false){
 		brandon.rtq.rho[leg] += dropVel/FREQ;
-		boundCalc(0,0,0);
+		boundCalc();
 	}else {
 		brandon.state[leg] = 3;
 		brandon.cycleDuration[leg] = ros::Time::now() - brandon.cycleStart[leg];
@@ -280,12 +282,11 @@ void drop(int leg){ //* state 2
 }
 
 void stride(int leg){ //* state 3
-	if (brandon.footSwitch.data[leg] == false) {
-		brandon.rtq.rho[leg] += 1; 
-		boundCalc(0,0,0);
-	}
+	if (brandon.footSwitch.data[leg] == false) brandon.rtq.rho[leg] += 1;
+	boundCalc();
+	
 	brandon.rtq.q[leg] -= brandon.velocity.linear.x/FREQ;
-	brandon.k[leg] = abs(brandon.rtq.q[leg] - brandon.e.reverse(brandon.velocity.linear.x));
+	brandon.k[leg] = abs(brandon.rtq.q[leg] - brandon.e[leg].reverse(brandon.velocity.linear.x));
 }
 
 // ------------- Main ------------
