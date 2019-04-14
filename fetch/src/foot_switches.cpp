@@ -88,7 +88,7 @@ int main(int argc, char **argv){
 	n.param("foot_switches_enable_logging", enableLogging, false);
 	n.param("foot_switches_publish_frequency_hz", frequency_hz, 5.0);
 
-	pub = n.advertise<std_msgs::UInt8MultiArray>("foot_switches", 100);
+	pub = n.advertise<std_msgs::UInt8MultiArray>("foot_switches", 100, true);
 
 	if(board_init()) return -1;
 
