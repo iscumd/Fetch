@@ -303,7 +303,7 @@ void drop(int leg){ //* state 2
 		brandon.rtq.rho[leg] += dropVel/FREQ;
 		boundCalc();
 	}else {
-		brandon.state[leg] = SWING;
+		brandon.state[leg] = STRIDE;
 		brandon.cycleDuration[leg] = ros::Time::now() - brandon.cycleStart[leg];
 		brandon.cycleStart[leg] = ros::Time::now();
 		brandon.legRef = leg;
