@@ -203,8 +203,7 @@ void heightAdjust(float height){
 	float diff;
 	for (int i = 0; i<4; i++){
 		if (brandon.footSwitch.data[i] == true){
-			legCount++ ;
-			avHeight += brandon.rtq.rho[i];
+			brandon.rtq.rho
 		}
 	}
 	if (legCount == 0){
@@ -289,23 +288,19 @@ void lift(int leg){ //* state 0
 	brandon.rtq.rho[leg] -= 5;
 	brandon.state[leg] = SWING;
 	boundCalc();
-	//if(enableLogging) ROS_INFO("GC:\tlift state\tleg:\t[%i]", leg);
 }
 
+//!Why edit rho? 
 void swing(int leg, float liftHeight){ //* state 1
 	// ensure leg is lifted up to standard height
 	if (brandon.rtq.rho[leg] > liftHeight){ // tries to lift to desired height
 		brandon.rtq.rho[leg] -= liftVel/FREQ;
 		boundCalc();
-		//if(enableLogging) ROS_INFO("GC:\tswing state\tleg:\t[%i]\tlifting to:\t[%f]\tdelta:", leg, liftHeight, liftVel/FREQ);
 	}
 	else if (brandon.rtq.rho[leg] < liftHeight){ // ensures leg doesnt go over desired height
 		brandon.rtq.rho[leg] = liftHeight;
 		boundCalc();
 	}
-	//else{ // just tells us we've reached the desired height
-		//if(enableLogging) ROS_INFO("GC:\tswing state\tleg:\t[%i]\treached liftHeight: [%f]", leg, liftHeight);
-	//}
 
 	// ensure leg is pulled to the right point on either side, depending on direction
 	if (brandon.rtq.q[leg] < brandon.e[leg].forward(brandon.velocity.linear.x)){
@@ -321,6 +316,14 @@ void drop(int leg){ //* state 2
 		boundCalc();
 	}else {
 		brandon.state[leg] = STRIDE;
+
+		//!
+		if (leg == 0) brandon.state[2] = LIFT;
+		else if (leg == 1) brandon.state[3] = LIFT;
+		else if (leg == 2) brandon.state[1] = LIFT;
+		else if (leg == 3) brandon.state[0] = LIFT;
+		//!
+
 		brandon.cycleDuration[leg] = ros::Time::now() - brandon.cycleStart[leg];
 		brandon.cycleStart[leg] = ros::Time::now();
 		brandon.legRef = leg;
@@ -395,20 +398,24 @@ int main(int argc, char **argv){
 		}
 		else
 		{
-
 			heightAdjust(defaultRho); // keep robot height at desired level
 
 			brandon.stability = stabilityCalc(-1,-1); // update stability margins at the beginning of each loop
 			//! all decisions need to check stability first
 
-			//*stability margin
-			// S+
+		//*stability margin
+			//!
+			for (int i=0; i < 4; i++){
+				if (brandon.rtq.q[i] > 9 && brandon.state[i] == SWING) brandon.state[i] = DROP; 
+			}
+			//!
 			if (brandon.stability.forward(brandon.velocity.linear.x) < forwardStabilityThreshold){
 				if(enableLogging) ROS_INFO("GC:\tforward stability out of tolerance by [%f]", forwardStabilityThreshold - brandon.stability.forward(brandon.velocity.linear.x));
-				
 				for(int i=0; i < 2; i++){
+					// if not in stride state
+					//todo Ask Bergs if different method for state changes. This seems unreliable.
 					if (brandon.state[brandon.forwardLeg[i]] != STRIDE)
-					{ // if not in stride state
+					{ 
 						if (stabilityCalc(-1, brandon.forwardLeg[i]).forward(brandon.velocity.linear.x) > forwardStabilityThreshold)
 						{
 							brandon.state[brandon.forwardLeg[i]] = DROP; // if stability is helped, drop the leg immediately
@@ -445,6 +452,7 @@ int main(int argc, char **argv){
 					brandon.nextLeg = 0;
 					break;
 				}
+				
 				if(enableLogging) ROS_INFO("GC:\t'phase' check\tnextLeg\t[%i]", brandon.nextLeg);
 				if(stabilityCalc(brandon.nextLeg, -1).min() > forwardStabilityThreshold)
 				{
@@ -466,7 +474,11 @@ int main(int argc, char **argv){
 					}
 				}
 			}
+			
 		};
+
+
+
 		// act on set states for each leg
 		for (int i=0;i<4;i++){
 			switch(brandon.state[i]){
@@ -504,3 +516,8 @@ int main(int argc, char **argv){
 	return 0;
 }
 
+/* Issues and questions:
+Transition TO drop state from swing outside of stability calculations?
+Transition to Lift state from stride outside of stability calculations?
+
+*/
