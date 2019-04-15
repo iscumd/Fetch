@@ -390,6 +390,7 @@ int main(int argc, char **argv){
 			for(int i = 0; i<4; i++) {
 				if (brandon.footSwitch.data[i] == false) brandon.state[i] = DROP;
 			}
+			heightAdjust(brandon.chassisRho); // keep robot height at desired level
 		}
 		else
 		{
