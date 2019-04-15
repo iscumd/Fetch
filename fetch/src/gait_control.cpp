@@ -40,25 +40,25 @@ public:
 		else return abs(minus); 
 	}
 	float forward(float vel){
-		if (vel <= 0) {
+		if (vel >= 0) {
 			return plus;
 			if(enableLogging) ROS_INFO("stability margin forward returned plus");
 		}
 		else
 		{
 			return minus;
-			if(enableLogging) ROS_INFO("stability margin forwars returned minus");
+			if(enableLogging) ROS_INFO("stability margin forward returned minus");
 		}
 	}
 	float reverse(float vel){
 		if (vel < 0) {
-			return minus;
-			if(enableLogging) ROS_INFO("stability margin reverse returned minus");
+			return plus;
+			if(enableLogging) ROS_INFO("stability margin reverse returned plus");
 		}
 		else
 		{
-			return plus;
-			if(enableLogging) ROS_INFO("stability margin reverse returned plus");
+			return minus;
+			if(enableLogging) ROS_INFO("stability margin reverse returned minus");
 		}
 	}
 };
@@ -385,7 +385,7 @@ int main(int argc, char **argv){
 	while(ros::ok()){
 		ros::spinOnce();
 
-		if (abs(brandon.velocity.linear.x) < .1){
+		if (abs(brandon.velocity.linear.x) < 5){
 			if(enableLogging) ROS_INFO("GC:\tno velocity given, no change");
 			for(int i = 0; i<4; i++) {
 				if (brandon.footSwitch.data[i] == false) brandon.state[i] = DROP;
