@@ -21,7 +21,7 @@ double minRho, maxRho;
 double innerE, outerE;
 double forwardStabilityThreshold, backwardStabilityThreshold;
 double defaultRho, defaultTheta, defaultQ;
-double liftVel, dropVel;
+double liftVel, dropVel, maxVel;
 
 bool enableLogging;
 double leftRollThresh, rightRollThresh;
@@ -165,7 +165,7 @@ stabMargin stabilityCalc(int testLegLift, int testLegDrop){
 	// assume test lift leg is on the ground
 	if(testLegDrop != -1) {
 		localFootSw.data[testLegDrop] = 1;
-		if(enableLogging) ROS_INFO("GC:\tstabilityCalc\tdrop leg:\t[%i]", testLegLift);
+		if(enableLogging) ROS_INFO("GC:\tstabilityCalc\tdrop leg:\t[%i]", testLegDrop);
 	}
 
 	for(int i=0;i<3;i++){
@@ -238,7 +238,7 @@ void manualControlCallback(const geometry_msgs::Twist::ConstPtr& msg){
 	// input velocity
 	// add format of multiarray for ease-of-use
 	brandon.velocity = *msg;	// velocity
-	brandon.velocity.linear.x *= 50;
+	brandon.velocity.linear.x *= maxVel;
 	if(enableLogging) ROS_INFO("GC:\tcontrollerCB\tlinear x:\t[%f] cm/s", brandon.velocity.linear.x);
 }
 
@@ -362,6 +362,7 @@ int main(int argc, char **argv){
 	n.getParam("leg_boundaries", legBounds);
 	n.param("swing_velocity", liftVel, 30.0);
 	n.param("drop_velocity", dropVel, 50.0);
+	n.param("max_velocity", maxVel, 25.0);
 	n.param("forward_stability_threshold", forwardStabilityThreshold, 5.0);
    
     //Pitch and Roll Thresholds.
@@ -411,7 +412,7 @@ int main(int argc, char **argv){
 						if (stabilityCalc(-1, brandon.forwardLeg[i]).forward(brandon.velocity.linear.x) > forwardStabilityThreshold)
 						{
 							brandon.state[brandon.forwardLeg[i]] = DROP; // if stability is helped, drop the leg immediately
-							if(enableLogging) ROS_INFO("GC:\t'stability' check\t dropping leg \t[%i]", i);
+							if(enableLogging) ROS_INFO("GC:\t'stability' check\tdropping leg\t[%i]", i);
 						}
 						else
 						{
@@ -429,6 +430,7 @@ int main(int argc, char **argv){
 				//// DR = 1 - phi/ something?	
 				//// (1-DR)*avCT
 				// compare average cycle time and start times
+				if(enableLogging) ROS_INFO("GC:\t'stability' check\tlastLeg\t[%i]", brandon.legRef);
 				switch (brandon.legRef){
 					case 0:
 					brandon.nextLeg = 2;
@@ -443,6 +445,7 @@ int main(int argc, char **argv){
 					brandon.nextLeg = 0;
 					break;
 				}
+				if(enableLogging) ROS_INFO("GC:\t'phase' check\tnextLeg\t[%i]", brandon.nextLeg);
 				if(stabilityCalc(brandon.nextLeg, -1).min() > forwardStabilityThreshold)
 				{
 					brandon.state[brandon.nextLeg] = LIFT;
