@@ -94,7 +94,7 @@ public:
 	fetch::RhoThetaQArray rtq;
 	float k[4];
 	int state[4];
-	int legRef, nextLeg;
+	int lastLeg, nextLeg;
 
 	int forwardLeg[2];
 	int rearLeg[2];
@@ -108,7 +108,7 @@ public:
 		velocity = geometry_msgs::Twist();
 		chassisXTheta = defaultTheta;
 		chassisRho = defaultRho;
-		legRef = 0;
+		lastLeg = 0;
 		stability = stabMargin();
 	}
 };
@@ -119,6 +119,16 @@ robot brandon = robot();
 // ---------- Functions ----------
 
 int sign(float num){ return (num > 0) - (num < 0);}
+
+int legCheck(int testLeg){
+	// set testLeg to leg intended to be lifted
+	// intended to check that all other legs are on the ground first / in stride state
+	int legCheck = 0;
+	for(int leg =0; leg<4; leg++){
+		if (brandon.state[leg] != STRIDE && leg != testLeg)	legCheck = 1;
+	}
+	return legCheck;
+}
 
 void boundCalc(){
 	for (int leg = 0; leg < 4; leg++){
@@ -229,7 +239,7 @@ void footInitialize(){
 		brandon.rtq.q.push_back(defaultQ);
 	}
 	ros::Duration(10).sleep();
-	brandon.legRef = 0;
+	brandon.lastLeg = 0;
 }
 
 // ----- Callback Functions ------
@@ -327,7 +337,7 @@ void drop(int leg){ //* state 2
 		brandon.state[leg] = STRIDE;
 		brandon.cycleDuration[leg] = ros::Time::now() - brandon.cycleStart[leg];
 		brandon.cycleStart[leg] = ros::Time::now();
-		brandon.legRef = leg;
+		brandon.lastLeg = leg;
 	}
 }
 
@@ -337,6 +347,7 @@ void stride(int leg){ //* state 3
 	
 	brandon.rtq.q[leg] -= brandon.velocity.linear.x/FREQ;
 	brandon.k[leg] = abs(brandon.rtq.q[leg] - brandon.e[leg].reverse(brandon.velocity.linear.x));
+	if(brandon.k[leg] < 2 && legCheck(leg) == 0) brandon.state[leg] = LIFT; // lift if you hit the very rear bound and no other legs are lifted
 }
 
 // ------------- Main ------------
@@ -395,91 +406,33 @@ int main(int argc, char **argv){
 			for(int i = 0; i<4; i++) {
 				if (brandon.footSwitch.data[i] == false) brandon.state[i] = DROP;
 			}
-			////heightAdjust(defaultRho); // keep robot height at desired level
 		}
 		else
 		{
-
-			heightAdjust(defaultRho); // keep robot height at desired level
-
-			brandon.stability = stabilityCalc(-1,-1); // update stability margins at the beginning of each loop
-			//! all decisions need to check stability first
-
-			//*stability margin
-			// S+
-			if (brandon.stability.forward(brandon.velocity.linear.x) < stabilityThreshold){
-				if(enableLogging) ROS_INFO("GC:\tforward stability out of tolerance by [%f]", stabilityThreshold - brandon.stability.forward(brandon.velocity.linear.x));
-				
-				for(int i=0; i < 2; i++){
-					if (brandon.state[brandon.forwardLeg[i]] != STRIDE)
-					{ // if not in stride state
-						if (stabilityCalc(-1, brandon.forwardLeg[i]).forward(brandon.velocity.linear.x) > stabilityThreshold)
-						{
-							brandon.state[brandon.forwardLeg[i]] = DROP; // if stability is helped, drop the leg immediately
-							if(enableLogging) ROS_INFO("GC:\t'stability' check\tdropping leg\t[%i]", i);
-						}
-						else
-						{
-							brandon.state[brandon.forwardLeg[i]] = SWING; // if it doesn't help, keep swinging the leg
-						}
-					} // todo add condition for if both legs are on the ground
-				}
-			} // s- : 	only big issue with slope probably
-			else	//*phase between legs
-			{
-				if(enableLogging) ROS_INFO("GC:\treached 'phase' check");	
-				// ... 0,2,1,3 ...
-				// try to keep duty cycle/time delay between legs
-				// elength = velocity * CT * DutyRatio
-				//// DR = 1 - phi/ something?	
-				//// (1-DR)*avCT
-				// compare average cycle time and start times
-				if(enableLogging) ROS_INFO("GC:\t'phase' check\tlastLeg\t[%i]", brandon.legRef);
-				switch (brandon.legRef){
-					case 0:
-					brandon.nextLeg = 2;
-					break;
-					case 1:
-					brandon.nextLeg = 3;
-					break;
-					case 2:
-					brandon.nextLeg = 1;
-					break;
-					case 3:
-					brandon.nextLeg = 0;
-					break;
-				}
-				if(enableLogging) ROS_INFO("GC:\t'phase' check\tnextLeg\t[%i]", brandon.nextLeg);
-				if(brandon.nextLeg < 2){
-					if(stabilityCalc(brandon.nextLeg, -1).forward(brandon.velocity.linear.x) > stabilityThreshold)
-					{
-						brandon.state[brandon.nextLeg] = LIFT;
-						if(enableLogging) ROS_INFO("GC:\t'phase' check\tlifting leg\t[%i]", brandon.nextLeg);
-					}
-				}
-				else if(stabilityCalc(brandon.nextLeg, -1).reverse(brandon.velocity.linear.x) < -stabilityThreshold)
-				{
-					brandon.state[brandon.nextLeg] = LIFT;
-					if(enableLogging) ROS_INFO("GC:\t'phase' check\tlifting leg\t[%i]", brandon.nextLeg);
-				}
-				else	//* k check
-				{
-					if(enableLogging) ROS_INFO("GC:\treached 'k' check");
-					//	final check, otherwise no state changes necessary
-					for (int i=0;i<4;i++){
-						if (brandon.footSwitch.data[i] == true && brandon.k[i] < 2){
-							int legCheck = 0;
-							for(int j=0; j<4; j++){
-								if (brandon.footSwitch.data[j] != true) legCheck = 1;
-							}
-							if(legCheck == 0 && stabilityCalc(i, -1).min()){
-								brandon.state[i] = LIFT;
-								if(enableLogging) ROS_INFO("GC:\t'k' check\tlifting leg\t[%i]", i);
-								i=4;
-							}
-						}
-					}
-				}
+			if(enableLogging) ROS_INFO("GC:\treached 'phase' check");	
+			
+			// ... 0,2,1,3 ...
+			// simply sets the pattern by looking at last leg to 'drop' and selecting a leg to lift based on that
+			if(enableLogging) ROS_INFO("GC:\t'phase' check\tlastLeg\t[%i]", brandon.lastLeg);
+			switch (brandon.lastLeg){
+				case 0:
+				brandon.nextLeg = 2;
+				break;
+				case 1:
+				brandon.nextLeg = 3;
+				break;
+				case 2:
+				brandon.nextLeg = 1;
+				break;
+				case 3:
+				brandon.nextLeg = 0;
+				break;
+			}
+			if(enableLogging) ROS_INFO("GC:\t'gait' check\tnextLeg\t[%i]", brandon.nextLeg);
+			
+			if(legCheck(brandon.nextLeg) == 0){ // only lift next leg if no other leg is lifted
+				brandon.state[brandon.nextLeg] = LIFT;
+				if(enableLogging) ROS_INFO("GC:\t'gait' check\tlifting leg\t[%i]", brandon.nextLeg);
 			}
 		};
 		// act on set states for each leg
