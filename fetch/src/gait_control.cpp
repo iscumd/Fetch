@@ -202,7 +202,7 @@ void heightAdjust(float height){
 	float avHeight = 0;
 	float diff;
 	for (int i = 0; i<4; i++){
-		if (brandon.footSwitch.data[i] == 1){
+		if (brandon.footSwitch.data[i] != 0){
 			legCount++ ;
 			avHeight += brandon.rtq.rho[i];
 		}
@@ -357,8 +357,6 @@ int main(int argc, char **argv){
 	n.param("default_leg_rho", defaultRho, 25.0);
 	n.param("default_leg_theta", defaultTheta, 0.0);
 	n.param("default_leg_q", defaultQ, 0.0);
-	n.param("default_chassis_rho", defaultRho, 25.0);
-	n.param("default_x_orient", defaultTheta, 0.0);
 	n.getParam("leg_boundaries", legBounds);
 	n.param("swing_velocity", liftVel, 30.0);
 	n.param("drop_velocity", dropVel, 50.0);
@@ -390,12 +388,12 @@ int main(int argc, char **argv){
 			for(int i = 0; i<4; i++) {
 				if (brandon.footSwitch.data[i] == false) brandon.state[i] = DROP;
 			}
-			heightAdjust(brandon.chassisRho); // keep robot height at desired level
+			heightAdjust(defaultRho); // keep robot height at desired level
 		}
 		else
 		{
 
-			heightAdjust(brandon.chassisRho); // keep robot height at desired level
+			heightAdjust(defaultRho); // keep robot height at desired level
 
 			brandon.stability = stabilityCalc(-1,-1); // update stability margins at the beginning of each loop
 			//! all decisions need to check stability first
