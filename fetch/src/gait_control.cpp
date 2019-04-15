@@ -19,7 +19,7 @@ double FREQ;
 
 double minRho, maxRho;
 double innerE, outerE;
-double forwardStabilityThreshold, backwardStabilityThreshold;
+double stabilityThreshold, backwardStabilityThreshold;
 double defaultRho, defaultTheta, defaultQ;
 double liftVel, dropVel, maxVel;
 
@@ -312,7 +312,11 @@ void swing(int leg, float liftHeight){ //* state 1
 		brandon.rtq.q[leg] += 4*brandon.velocity.linear.x/FREQ;
 		//if(enableLogging) ROS_INFO("GC:\tswing state\tleg:\t[%i]\treached liftHeight: [%f]", leg, liftHeight);
 
-	}else brandon.rtq.q[leg] = brandon.e[leg].forward(brandon.velocity.linear.x);
+	}else
+	{
+		brandon.rtq.q[leg] = brandon.e[leg].forward(brandon.velocity.linear.x);
+		brandon.state[leg] = DROP;
+	}
 }
 
 void drop(int leg){ //* state 2
@@ -355,7 +359,7 @@ int main(int argc, char **argv){
 	n.param("min_chassis_rho", minRho, 12.0);
 	n.param("max_chassis_rho", maxRho, 30.0);
 	n.param("outer_e_bound", outerE, 15.0);
-	n.param("inner_e_bound", innerE, 15.0);
+	n.param("inner_e_bound", innerE, 10.0);
 	n.param("default_leg_rho", defaultRho, 25.0);
 	n.param("default_leg_theta", defaultTheta, 0.0);
 	n.param("default_leg_q", defaultQ, 0.0);
@@ -363,7 +367,7 @@ int main(int argc, char **argv){
 	n.param("swing_velocity", liftVel, 30.0);
 	n.param("drop_velocity", dropVel, 50.0);
 	n.param("max_velocity", maxVel, 25.0);
-	n.param("forward_stability_threshold", forwardStabilityThreshold, 5.0);
+	n.param("forward_stability_threshold", stabilityThreshold, 5.0);
    
     //Pitch and Roll Thresholds.
 	n.param("left_roll_threshold", leftRollThresh, -30.0);
@@ -391,7 +395,7 @@ int main(int argc, char **argv){
 			for(int i = 0; i<4; i++) {
 				if (brandon.footSwitch.data[i] == false) brandon.state[i] = DROP;
 			}
-			heightAdjust(defaultRho); // keep robot height at desired level
+			////heightAdjust(defaultRho); // keep robot height at desired level
 		}
 		else
 		{
@@ -403,13 +407,13 @@ int main(int argc, char **argv){
 
 			//*stability margin
 			// S+
-			if (brandon.stability.forward(brandon.velocity.linear.x) < forwardStabilityThreshold){
-				if(enableLogging) ROS_INFO("GC:\tforward stability out of tolerance by [%f]", forwardStabilityThreshold - brandon.stability.forward(brandon.velocity.linear.x));
+			if (brandon.stability.forward(brandon.velocity.linear.x) < stabilityThreshold){
+				if(enableLogging) ROS_INFO("GC:\tforward stability out of tolerance by [%f]", stabilityThreshold - brandon.stability.forward(brandon.velocity.linear.x));
 				
 				for(int i=0; i < 2; i++){
 					if (brandon.state[brandon.forwardLeg[i]] != STRIDE)
 					{ // if not in stride state
-						if (stabilityCalc(-1, brandon.forwardLeg[i]).forward(brandon.velocity.linear.x) > forwardStabilityThreshold)
+						if (stabilityCalc(-1, brandon.forwardLeg[i]).forward(brandon.velocity.linear.x) > stabilityThreshold)
 						{
 							brandon.state[brandon.forwardLeg[i]] = DROP; // if stability is helped, drop the leg immediately
 							if(enableLogging) ROS_INFO("GC:\t'stability' check\tdropping leg\t[%i]", i);
@@ -423,14 +427,14 @@ int main(int argc, char **argv){
 			} // s- : 	only big issue with slope probably
 			else	//*phase between legs
 			{
-				
+				if(enableLogging) ROS_INFO("GC:\treached 'phase' check");	
 				// ... 0,2,1,3 ...
 				// try to keep duty cycle/time delay between legs
 				// elength = velocity * CT * DutyRatio
 				//// DR = 1 - phi/ something?	
 				//// (1-DR)*avCT
 				// compare average cycle time and start times
-				if(enableLogging) ROS_INFO("GC:\t'stability' check\tlastLeg\t[%i]", brandon.legRef);
+				if(enableLogging) ROS_INFO("GC:\t'phase' check\tlastLeg\t[%i]", brandon.legRef);
 				switch (brandon.legRef){
 					case 0:
 					brandon.nextLeg = 2;
@@ -446,22 +450,33 @@ int main(int argc, char **argv){
 					break;
 				}
 				if(enableLogging) ROS_INFO("GC:\t'phase' check\tnextLeg\t[%i]", brandon.nextLeg);
-				if(stabilityCalc(brandon.nextLeg, -1).min() > forwardStabilityThreshold)
+				if(brandon.nextLeg < 2){
+					if(stabilityCalc(brandon.nextLeg, -1).forward(brandon.velocity.linear.x) > stabilityThreshold)
+					{
+						brandon.state[brandon.nextLeg] = LIFT;
+						if(enableLogging) ROS_INFO("GC:\t'phase' check\tlifting leg\t[%i]", brandon.nextLeg);
+					}
+				}
+				else if(stabilityCalc(brandon.nextLeg, -1).reverse(brandon.velocity.linear.x) < -stabilityThreshold)
 				{
 					brandon.state[brandon.nextLeg] = LIFT;
 					if(enableLogging) ROS_INFO("GC:\t'phase' check\tlifting leg\t[%i]", brandon.nextLeg);
 				}
 				else	//* k check
 				{
+					if(enableLogging) ROS_INFO("GC:\treached 'k' check");
 					//	final check, otherwise no state changes necessary
 					for (int i=0;i<4;i++){
-						if (brandon.state[i] == STRIDE && brandon.k[i] < 2){
+						if (brandon.footSwitch.data[i] == true && brandon.k[i] < 2){
 							int legCheck = 0;
 							for(int j=0; j<4; j++){
-								if (brandon.state[j] != STRIDE) legCheck = 1;
-								}
-							if(legCheck = 1 && stabilityCalc(i, -1).min()) brandon.state[i] = LIFT;
-						if(enableLogging) ROS_INFO("GC:\t'k' check\tlifting leg\t[%i]", brandon.nextLeg);
+								if (brandon.footSwitch.data[j] != true) legCheck = 1;
+							}
+							if(legCheck == 0 && stabilityCalc(i, -1).min()){
+								brandon.state[i] = LIFT;
+								if(enableLogging) ROS_INFO("GC:\t'k' check\tlifting leg\t[%i]", i);
+								i=4;
+							}
 						}
 					}
 				}
