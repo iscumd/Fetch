@@ -113,7 +113,7 @@ public:
 	}
 };
 
-robot brandon;
+robot brandon = robot();
 
 
 // ---------- Functions ----------
@@ -202,7 +202,7 @@ void heightAdjust(float height){
 	float avHeight = 0;
 	float diff;
 	for (int i = 0; i<4; i++){
-		if (brandon.footSwitch.data[i] != 0){
+		if (brandon.footSwitch.data[i] == true){
 			legCount++ ;
 			avHeight += brandon.rtq.rho[i];
 		}
@@ -228,6 +228,8 @@ void footInitialize(){
 		brandon.rtq.theta.push_back(defaultTheta);
 		brandon.rtq.q.push_back(defaultQ);
 	}
+	ros::Duration(10).sleep();
+	brandon.legRef = 0;
 }
 
 // ----- Callback Functions ------
