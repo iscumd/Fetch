@@ -316,6 +316,7 @@ void drop(int leg){ //* state 2
 		boundCalc();
 	}else {
 		brandon.state[leg] = STRIDE;
+		//For a commit
 
 		//!
 		if (leg == 0) brandon.state[2] = LIFT;
