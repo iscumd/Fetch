@@ -6,7 +6,7 @@
 
 ros::Publisher gaitControlPub;
 
-int frequency_hz = 2;
+int frequency_hz = 1;
 bool enableMovement;
 
 void joystickCallback(const isc_joy::xinput::ConstPtr& joy){
@@ -22,7 +22,7 @@ int main(int argc, char **argv){
 
 	ros::Subscriber joystickSub = n.subscribe("joystick/xinput", 5, joystickCallback);
 
-    double min = 12;
+    double min = 13;
     double max = 30;
     bool down = true;
 	ros::Rate loopRate(frequency_hz);
@@ -41,8 +41,9 @@ int main(int argc, char **argv){
                 foot_position.q.push_back(0);
             }
 	        gaitControlPub.publish(foot_position);
+			down = !down;
+			ROS_INFO("%f", foot_position.rho.at(0));
         }
-        down = !down;
 		loopRate.sleep();
 	}
 

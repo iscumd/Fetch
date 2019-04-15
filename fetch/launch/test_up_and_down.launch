@@ -1,0 +1,19 @@
+<launch>
+	<arg name="joy_dev" default="/dev/input/js1" />
+	<arg name="mapping_file" default="xbox360_mapping.yaml" />
+	
+	<!-- joy node -->
+	<node pkg="joy" type="joy_node" name="joy_node">
+		<param name="dev" value="$(arg joy_dev)" />
+	</node>
+
+	<!-- xinput node -->
+	<node pkg="isc_joy" type="joystick_xbox360" name="joystick_xbox360">
+		<rosparam command="load" file="$(find isc_joy)/mappings/$(arg mapping_file)" />
+	</node>
+    
+	<node pkg="fetch" type="test_up_and_down" name="test_up_and_down" output="screen" />
+
+	<!-- leg mapping node -->
+	<node pkg="fetch" type="leg_mapping" name="leg_mapping" output="screen" />
+</launch>
