@@ -1,34 +1,5 @@
 <launch>
-	<arg name="joy_dev" default="/dev/input/js0" />
-	<arg name="mapping_file" default="xbox360_mapping.yaml" />
-	<arg name="enable_logging" default="false" />
-	<!-- <arg name="speed_multiplier" default="1.0" /> -->
-	<!-- <arg name="turn_multiplier" default="0.5" /> -->
-	<arg name="forward_pitch_threshold" default="30.0" />
-	<arg name="backward_pitch_threshold" default="-30.0" />
-	<arg name="left_roll_threshold" default="-30.0" />
-	<arg name="right_roll_threshold" default="30.0" />
-	
-	<!-- joy node -->
-	<node pkg="joy" type="joy_node" name="joy_node">
-		<param name="dev" value="$(arg joy_dev)" />
-	</node>
-
-	<!-- xinput node -->
-	<node pkg="isc_joy" type="joystick_xbox360" name="joystick_xbox360">
-		<rosparam command="load" file="$(find isc_joy)/mappings/$(arg mapping_file)" />
-	</node>
-
-	<!-- manual control node -->
-	<!-- <param name="manual_control_speed_multiplier" value="$(arg speed_multiplier)" /> -->
-	<!-- <param name="manual_control_turn_multiplier" value="$(arg turn_multiplier)" /> -->
-	<node pkg="fetch" type="fetch_manual_control" name="manual_control" />
-
-	<!-- gait control node -->
-	<param name="forward_stability_threshold" value="10.0" />
-	<param name="gait_control_enable_logging" value="true"/>
-	<node pkg="fetch" type="gait_control" name="gait_control" output="screen" />
-	<node pkg="fetch" type="leg_mapping" name="leg_mapping" output="screen" />
+	<!-- imu node -->
 	<node pkg="fetch" type="imu" name="imu" output="screen" />
 
     <!-- foot_switches -->
