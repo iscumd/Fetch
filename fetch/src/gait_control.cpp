@@ -29,6 +29,7 @@ double leftRollThresh, rightRollThresh;
 double forwardPitchThresh, backwardPitchThresh;
 double servoToCOM;
 std::vector<double> legBounds;
+ros::Publisher gaitPub;
 
 
 // ----------- Classes -----------
@@ -243,7 +244,6 @@ void footInitialize(){
 		brandon.rtq.theta.push_back(defaultTheta);
 		brandon.rtq.q.push_back(defaultQ);
 	}
-	ros::Duration(10).sleep();
 	brandon.lastLeg = 0;
 }
 
@@ -300,6 +300,8 @@ void orientationControlCallback(const fetch::OrientationRPY::ConstPtr& msg){
 void recenterCallback(const std_msgs::Bool::ConstPtr& msg){
 	if (msg->data == true) {
 		footInitialize();
+		gaitPub.publish(brandon.rtq);
+		ros::Duration(3).sleep();
 	}
 }
 
@@ -353,7 +355,10 @@ void drop(int leg){ //* state 2
 }
 
 void stride(int leg){ //* state 3
-	if (brandon.footSwitch.data[leg] == false) brandon.rtq.rho[leg] += 1;
+	if (brandon.footSwitch.data[leg] == false){
+		brandon.rtq.rho[leg] += 1;
+		ros::Duration(0.02).sleep();
+	}
 	boundCalc();
 	
 	brandon.rtq.q[leg] -= brandon.velocity.linear.x/FREQ;
@@ -379,7 +384,7 @@ int main(int argc, char **argv){
 	n.param("max_chassis_rho", maxRho, 30.0);
 	n.param("outer_e_bound", outerE, 15.0);
 	n.param("inner_e_bound", innerE, 10.0);
-	n.param("default_leg_rho", defaultRho, 25.0);
+	n.param("default_leg_rho", defaultRho, 20.0);
 	n.param("default_leg_theta", defaultTheta, 0.0);
 	n.param("default_leg_q", defaultQ, 0.0);
 	n.getParam("leg_boundaries", legBounds);
@@ -396,20 +401,21 @@ int main(int argc, char **argv){
 	
 
 	// define topic name to publish to and queue size
-	ros::Publisher gaitPub = n.advertise<fetch::RhoThetaQArray>("gait_control", 5);
+	gaitPub = n.advertise<fetch::RhoThetaQArray>("gait_control", 5);
     
 	// define topic names to subscribe to and queue size
 	ros::Subscriber switchSub = n.subscribe("foot_switches", 5, switchCallback);
 	ros::Subscriber footSub = n.subscribe("foot_position", 5, footCallback);
 	ros::Subscriber eulerSub = n.subscribe("orientation_control", 5, orientationControlCallback);
 	ros::Subscriber manualControlSub = n.subscribe("manual_control", 5, manualControlCallback);
-	ros::Subscriber servoRecenterSub = n.subscribe("foot_servos_recenter", 5, recenterCallback);
+	ros::Subscriber servoRecenterSub = n.subscribe("gait_control_reinitialize", 5, recenterCallback);
     
 	// specify loop frequency, works with Rate::sleep to sleep for the correct time
     ros::Rate loop_rate(FREQ);
 	
 	// initialize leg positions
 	footInitialize();
+	ros::Duration(2).sleep();
 
 	while(ros::ok()){
 		ros::spinOnce();
@@ -421,7 +427,7 @@ int main(int argc, char **argv){
 		if (abs(brandon.velocity.linear.x) < 5){
 			if(enableLogging) ROS_INFO("GC:\tno velocity given, no change");
 			for(int i = 0; i<4; i++) {
-				if (brandon.footSwitch.data.at(i) == false) brandon.state[i] = DROP;
+				if (brandon.footSwitch.data.at(i) == false) brandon.state[i] = STRIDE;
 			}
 		}
 		else

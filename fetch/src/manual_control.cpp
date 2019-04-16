@@ -7,6 +7,7 @@
 
 ros::Publisher manualPub;
 ros::Publisher servoRecenterPub;
+ros::Publisher gaitControlReinitializePub;
 
 bool enableLogging;
 
@@ -36,7 +37,8 @@ void joystickCallback(const isc_joy::xinput::ConstPtr& joy){
 	if(!enableDriving && joy->Y){
 		std_msgs::Bool reset_msg;
 		reset_msg.data = true;
-		servoRecenterPub.publish(reset_msg);
+		// servoRecenterPub.publish(reset_msg);
+		gaitControlReinitializePub.publish(reset_msg);
 	}
 }
 
@@ -49,6 +51,7 @@ int main(int argc, char **argv){
 
 	manualPub = n.advertise<geometry_msgs::Twist>("manual_control", 5);
 	servoRecenterPub = n.advertise<std_msgs::Bool>("foot_servos_recenter", 5);
+	gaitControlReinitializePub = n.advertise<std_msgs::Bool>("gait_control_reinitialize", 5);
 
 	ros::Subscriber joystickSub = n.subscribe("joystick/xinput", 5, joystickCallback);
 
