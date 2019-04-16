@@ -1,12 +1,12 @@
 #include "ros/ros.h"
-#include "std_msgs/Float32MultiArray.h"
+#include "fetch/RhoThetaQArray.h"
 #include "isc_joy/xinput.h"
 
 #include <string>
 
-ros::Publisher servoAnglePub;
+ros::Publisher gaitControlPub;
 
-int frequency_hz = 2;
+int frequency_hz = 1;
 bool enableMovement;
 
 void joystickCallback(const isc_joy::xinput::ConstPtr& joy){
@@ -18,25 +18,32 @@ int main(int argc, char **argv){
 
 	ros::NodeHandle n;
 
-	servoAnglePub = n.advertise<std_msgs::Float32MultiArray>("leg_mapping", 5);
+	gaitControlPub = n.advertise<fetch::RhoThetaQArray>("gait_control", 5);
 
 	ros::Subscriber joystickSub = n.subscribe("joystick/xinput", 5, joystickCallback);
 
-    double angle = 30;
-    double angleAdd = 120;
-    int down = 0;
+    double min = 13;
+    double max = 30;
+    bool down = true;
 	ros::Rate loopRate(frequency_hz);
 	while(ros::ok()) {
 		ros::spinOnce();
         if(enableMovement){
-	        std_msgs::Float32MultiArray servoAngle;
+	        fetch::RhoThetaQArray foot_position;
             for(int i = 0; i < 4; i++){
-                servoAngle.data.push_back(angle + angleAdd * down);
-                servoAngle.data.push_back(angle + angleAdd * !down);
+				if (down) {
+                	foot_position.rho.push_back(min);
+				}
+				else{
+                	foot_position.rho.push_back(max);
+				}
+                foot_position.theta.push_back(0);
+                foot_position.q.push_back(0);
             }
-	        servoAnglePub.publish(servoAngle);
+	        gaitControlPub.publish(foot_position);
+			down = !down;
+			ROS_INFO("%f", foot_position.rho.at(0));
         }
-        down = !down;
 		loopRate.sleep();
 	}
 
