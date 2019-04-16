@@ -2,6 +2,7 @@
 #include "std_msgs/MultiArrayLayout.h"
 #include "std_msgs/MultiArrayDimension.h"
 #include "std_msgs/Float32MultiArray.h"
+#include "std_msgs/Bool.h"
 
 #include <string>
 
@@ -38,6 +39,13 @@ int board_init(){
 		rc_servo_power_rail_en(1);
 	}
 	return 0;
+}
+
+void center_servos(){
+	float midpoint_angle = (upper_angle+lower_angle)/2;
+	for(int i = 0; i < number_of_channels; i++){
+		servo_angles.push_back(midpoint_angle);
+	}
 }
 
 double map(double in, double inLower, double inUpper, double outLower, double outUpper){
@@ -80,6 +88,12 @@ void servoAnglesCallback(const std_msgs::Float32MultiArray::ConstPtr& msg){
 	}
 }
 
+void recenterCallback(const std_msgs::Bool::ConstPtr& msg){
+	if (msg->data == true) {
+		center_servos();
+	}
+}
+
 int main(int argc, char **argv){
 	ros::init(argc, argv, "foot_servos");
 
@@ -93,11 +107,9 @@ int main(int argc, char **argv){
 	n.param("foot_servos_lower_angle", lower_angle, -90.0);
 	n.param("foot_servos_upper_angle", upper_angle, 90.0);
 
-	float midpoint_angle = (upper_angle+lower_angle)/2;
-	for(int i = 0; i < number_of_channels; i++){
-		servo_angles.push_back(midpoint_angle);
-	}
+	center_servos();
 	ros::Subscriber servoAnglesSub = n.subscribe("leg_mapping", 5, servoAnglesCallback);
+	ros::Subscriber servoRecenterSub = n.subscribe("foot_servos_recenter", 5, recenterCallback);
 	ros::spinOnce();
 
 	if(board_init()) return -1;
