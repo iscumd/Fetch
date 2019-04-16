@@ -453,7 +453,7 @@ int main(int argc, char **argv){
 			}
 			if(enableLogging) ROS_INFO("GC:\t'gait' check\tnextLeg\t[%i]", brandon.nextLeg);
 			
-			if(legCheck(brandon.nextLeg) == 0 && brandon.state[brandon.nextLeg == STRIDE]){ // only lift next leg if no other leg is lifted
+			if(legCheck(brandon.nextLeg) == 0 && brandon.state[brandon.nextLeg] == STRIDE){ // only lift next leg if no other leg is lifted
 				brandon.state[brandon.nextLeg] = LIFT;
 				if(enableLogging) ROS_INFO("GC:\t'gait' check\tlifting leg\t[%i]", brandon.nextLeg);
 			}
