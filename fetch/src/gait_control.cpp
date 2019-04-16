@@ -233,6 +233,7 @@ void heightAdjust(float height){
 }
 
 void footInitialize(){
+	ROS_INFO("footInitialize");
 	for (int i =0; i < 4; i++){
 		brandon.rtq.rho.push_back(defaultRho);
 		brandon.rtq.theta.push_back(defaultTheta);
@@ -359,9 +360,6 @@ int main(int argc, char **argv){
     
 	// The first nodehandle constructed will fully initialize this node
 	ros::NodeHandle n;
-    
-	// specify loop frequency, works with Rate::sleep to sleep for the correct time
-    ros::Rate loop_rate(FREQ);
 
 	// get ros params
 	n.param("gait_control_frequency", FREQ, 20.0);
@@ -375,9 +373,9 @@ int main(int argc, char **argv){
 	n.param("default_leg_theta", defaultTheta, 0.0);
 	n.param("default_leg_q", defaultQ, 0.0);
 	n.getParam("leg_boundaries", legBounds);
-	n.param("swing_velocity", liftVel, 30.0);
-	n.param("drop_velocity", dropVel, 50.0);
-	n.param("max_velocity", maxVel, 25.0);
+	n.param("swing_velocity", liftVel, 20.0);
+	n.param("drop_velocity", dropVel, 20.0);
+	n.param("max_velocity", maxVel, 15.0);
 	n.param("forward_stability_threshold", stabilityThreshold, 5.0);
    
     //Pitch and Roll Thresholds.
@@ -395,16 +393,24 @@ int main(int argc, char **argv){
 	ros::Subscriber footSub = n.subscribe("foot_position", 5, footCallback);
 	ros::Subscriber eulerSub = n.subscribe("orientation_control", 5, orientationControlCallback);
 	ros::Subscriber manualControlSub = n.subscribe("manual_control", 5, manualControlCallback);
+    
+	// specify loop frequency, works with Rate::sleep to sleep for the correct time
+    ros::Rate loop_rate(FREQ);
+	
 	// initialize leg positions
 	footInitialize();
 
 	while(ros::ok()){
 		ros::spinOnce();
 
+		if (brandon.footSwitch.data.empty()) {
+			continue;
+		}
+
 		if (abs(brandon.velocity.linear.x) < 5){
 			if(enableLogging) ROS_INFO("GC:\tno velocity given, no change");
 			for(int i = 0; i<4; i++) {
-				if (brandon.footSwitch.data[i] == false) brandon.state[i] = DROP;
+				if (brandon.footSwitch.data.at(i) == false) brandon.state[i] = DROP;
 			}
 		}
 		else
