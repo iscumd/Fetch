@@ -244,6 +244,8 @@ void footInitialize(){
 		brandon.rtq.theta.push_back(defaultTheta);
 		brandon.rtq.q.push_back(defaultQ);
 	}
+	brandon.rtq.q.at(0) = brandon.e[0].plus;
+	brandon.rtq.q.at(3) = brandon.e[3].plus;
 	brandon.lastLeg = 0;
 }
 
