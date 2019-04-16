@@ -1,5 +1,5 @@
 <launch>
-	<arg name="joy_dev" default="/dev/input/js0" />
+	<arg name="joy_dev" default="/dev/input/js1" />
 	<arg name="mapping_file" default="xbox360_mapping.yaml" />
 	<arg name="enable_logging" default="false" />
 	<!-- <arg name="speed_multiplier" default="1.0" /> -->

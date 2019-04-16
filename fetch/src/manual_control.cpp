@@ -1,10 +1,12 @@
 #include "ros/ros.h"
 #include "geometry_msgs/Twist.h"
 #include "isc_joy/xinput.h"
+#include "std_msgs/Bool.h"
 
 #include <string>
 
 ros::Publisher manualPub;
+ros::Publisher servoRecenterPub;
 
 bool enableLogging;
 
@@ -30,6 +32,12 @@ void joystickCallback(const isc_joy::xinput::ConstPtr& joy){
 
 	if(enableLogging) ROS_INFO("Manual Control: %s linear.x=%f angular.x=%f angular.y=%f angular.z=%f", 
         joy->LB ? "on" : "off", msg.linear.x, msg.angular.x, msg.angular.y, msg.angular.z);
+	
+	if(!enableDriving && joy->Y){
+		std_msgs::Bool reset_msg;
+		reset_msg.data = true;
+		servoRecenterPub.publish(reset_msg);
+	}
 }
 
 int main(int argc, char **argv){
@@ -40,6 +48,7 @@ int main(int argc, char **argv){
 	n.param("manual_control_enable_logging", enableLogging, false);
 
 	manualPub = n.advertise<geometry_msgs::Twist>("manual_control", 5);
+	servoRecenterPub = n.advertise<std_msgs::Bool>("foot_servos_recenter", 5);
 
 	ros::Subscriber joystickSub = n.subscribe("joystick/xinput", 5, joystickCallback);
 
