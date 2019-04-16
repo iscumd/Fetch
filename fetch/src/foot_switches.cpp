@@ -21,7 +21,7 @@ volatile static uint8_t button1_volatile;
 volatile static uint8_t button2_volatile;
 volatile static uint8_t button3_volatile;
 ros::Publisher pub;
-string mode;
+std::string mode;
 
 int board_init(){
 	if(rc_button_init(BUTTON_PIN_FRONT_LEFT, RC_BTN_POLARITY_NORM_LOW, RC_BTN_DEBOUNCE_DEFAULT_US)
@@ -95,7 +95,7 @@ int main(int argc, char **argv){
 
 	n.param("foot_switches_enable_logging", enableLogging, false);
 	n.param("foot_switches_publish_frequency_hz", frequency_hz, 5.0);
-	n.param("foot_switches_mode", mode, "poll");
+	n.param("foot_switches_mode", mode, std::string("poll"));
 
 	pub = n.advertise<std_msgs::UInt8MultiArray>("foot_switches", 100, true);
 
