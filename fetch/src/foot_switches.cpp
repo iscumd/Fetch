@@ -21,6 +21,7 @@ volatile static uint8_t button1_volatile;
 volatile static uint8_t button2_volatile;
 volatile static uint8_t button3_volatile;
 ros::Publisher pub;
+string mode;
 
 int board_init(){
 	if(rc_button_init(BUTTON_PIN_FRONT_LEFT, RC_BTN_POLARITY_NORM_LOW, RC_BTN_DEBOUNCE_DEFAULT_US)
@@ -80,6 +81,13 @@ static void __on_back_right_release(void){
 	return;
 }
 
+void poll_buttons(){
+	button0_volatile = rc_button_get_state(BUTTON_PIN_FRONT_LEFT);
+	button1_volatile = rc_button_get_state(BUTTON_PIN_FRONT_RIGHT);
+	button2_volatile = rc_button_get_state(BUTTON_PIN_BACK_LEFT);
+	button3_volatile = rc_button_get_state(BUTTON_PIN_BACK_RIGHT);
+}
+
 int main(int argc, char **argv){
 	ros::init(argc, argv, "foot_switches");
 
@@ -87,6 +95,7 @@ int main(int argc, char **argv){
 
 	n.param("foot_switches_enable_logging", enableLogging, false);
 	n.param("foot_switches_publish_frequency_hz", frequency_hz, 5.0);
+	n.param("foot_switches_mode", mode, "poll");
 
 	pub = n.advertise<std_msgs::UInt8MultiArray>("foot_switches", 100, true);
 
@@ -97,19 +106,21 @@ int main(int argc, char **argv){
 		buttons.push_back(-1);
 	}
 	// initialize buttons' state
-	button0_volatile = rc_button_get_state(BUTTON_PIN_FRONT_LEFT);
-	button1_volatile = rc_button_get_state(BUTTON_PIN_FRONT_RIGHT);
-	button2_volatile = rc_button_get_state(BUTTON_PIN_BACK_LEFT);
-	button3_volatile = rc_button_get_state(BUTTON_PIN_BACK_RIGHT);
+	poll_buttons();
 	publish_message();
 	
-	rc_button_set_callbacks(BUTTON_PIN_FRONT_LEFT, __on_front_left_press, __on_front_left_release);
-	rc_button_set_callbacks(BUTTON_PIN_FRONT_RIGHT, __on_front_right_press, __on_front_right_release);
-	rc_button_set_callbacks(BUTTON_PIN_BACK_LEFT, __on_back_left_press, __on_back_left_release);
-	rc_button_set_callbacks(BUTTON_PIN_BACK_RIGHT, __on_back_right_press, __on_back_right_release);
+	if (mode == "interrupt") {
+		rc_button_set_callbacks(BUTTON_PIN_FRONT_LEFT, __on_front_left_press, __on_front_left_release);
+		rc_button_set_callbacks(BUTTON_PIN_FRONT_RIGHT, __on_front_right_press, __on_front_right_release);
+		rc_button_set_callbacks(BUTTON_PIN_BACK_LEFT, __on_back_left_press, __on_back_left_release);
+		rc_button_set_callbacks(BUTTON_PIN_BACK_RIGHT, __on_back_right_press, __on_back_right_release);
+	}
 
 	ros::Rate loopRate(frequency_hz);
 	while(ros::ok()) {
+		if (mode == "poll") {
+			poll_buttons();
+		}
 		if(button0_volatile != buttons.at(0) || button1_volatile != buttons.at(1) 
 			|| button2_volatile != buttons.at(2) || button3_volatile != buttons.at(3)){
 			publish_message();
