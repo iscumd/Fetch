@@ -4,6 +4,7 @@
 #include "fetch/RhoThetaQArray.h"
 #include "fetch/OrientationRPY.h"
 #include "std_msgs/UInt8MultiArray.h"
+#include "std_msgs/Bool.h"
 //#include "rc/mpu.h"
 
 #include <string>
@@ -234,6 +235,9 @@ void heightAdjust(float height){
 
 void footInitialize(){
 	ROS_INFO("footInitialize");
+	brandon.rtq.rho = std::vector<float>();
+	brandon.rtq.theta = std::vector<float>();
+	brandon.rtq.q = std::vector<float>();
 	for (int i =0; i < 4; i++){
 		brandon.rtq.rho.push_back(defaultRho);
 		brandon.rtq.theta.push_back(defaultTheta);
@@ -291,7 +295,13 @@ void orientationControlCallback(const fetch::OrientationRPY::ConstPtr& msg){
 		if(enableLogging) ROS_INFO("GC:\torientCB\trightRollThresh exceeded:\troll:\t[%f]", brandon.orientation.roll);
 		orientAdjust(0,-1); 
 	}
-}	
+}
+
+void recenterCallback(const std_msgs::Bool::ConstPtr& msg){
+	if (msg->data == true) {
+		footInitialize();
+	}
+}
 
 
 // ------- State Functions -------
@@ -393,6 +403,7 @@ int main(int argc, char **argv){
 	ros::Subscriber footSub = n.subscribe("foot_position", 5, footCallback);
 	ros::Subscriber eulerSub = n.subscribe("orientation_control", 5, orientationControlCallback);
 	ros::Subscriber manualControlSub = n.subscribe("manual_control", 5, manualControlCallback);
+	ros::Subscriber servoRecenterSub = n.subscribe("foot_servos_recenter", 5, recenterCallback);
     
 	// specify loop frequency, works with Rate::sleep to sleep for the correct time
     ros::Rate loop_rate(FREQ);
