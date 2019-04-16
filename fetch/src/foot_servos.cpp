@@ -42,6 +42,7 @@ int board_init(){
 }
 
 void center_servos(){
+	servo_angles = std::vector<float>();
 	float midpoint_angle = (upper_angle+lower_angle)/2;
 	for(int i = 0; i < number_of_channels; i++){
 		servo_angles.push_back(midpoint_angle);
