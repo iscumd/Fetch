@@ -12,6 +12,7 @@
 
 bool enableLogging;
 bool useOnboardPower;
+bool center_on_startup;
 int frequency_hz; //frequency to send pulses
 int number_of_channels = 8;
 std::vector<float> servo_angles;
@@ -102,13 +103,16 @@ int main(int argc, char **argv){
 
 	n.param("foot_servos_enable_logging", enableLogging, false);
 	n.param("foot_servos_use_onboard_power", useOnboardPower, false);
+	n.param("foot_servos_center_on_startup", center_on_startup, false);
 	n.param("foot_servos_pulse_frequency", frequency_hz, 50);
 	n.param("foot_servos_lower_pulse_width_ms", lower_pulse_width_ms, 0.9);
 	n.param("foot_servos_upper_pulse_width_ms", upper_pulse_width_ms, 2.1);
 	n.param("foot_servos_lower_angle", lower_angle, -90.0);
 	n.param("foot_servos_upper_angle", upper_angle, 90.0);
 
-	center_servos();
+	if (center_on_startup) {
+		center_servos();
+	}
 	ros::Subscriber servoAnglesSub = n.subscribe("leg_mapping", 5, servoAnglesCallback);
 	ros::Subscriber servoRecenterSub = n.subscribe("foot_servos_recenter", 5, recenterCallback);
 	ros::spinOnce();
