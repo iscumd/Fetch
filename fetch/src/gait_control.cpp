@@ -255,6 +255,8 @@ void footInitialize(){
 		brandon.rtq.q.at(brandon.legPattern.at(i)) = phase + brandon.e[brandon.legPattern.at(i)].minus;
 	}
 	brandon.lastLeg = 0;
+	gaitPub.publish(brandon.rtq);
+	ros::Duration(3).sleep();
 }
 
 // ----- Callback Functions ------
@@ -310,8 +312,6 @@ void orientationControlCallback(const fetch::OrientationRPY::ConstPtr& msg){
 void recenterCallback(const std_msgs::Bool::ConstPtr& msg){
 	if (msg->data == true) {
 		footInitialize();
-		gaitPub.publish(brandon.rtq);
-		ros::Duration(3).sleep();
 	}
 }
 
@@ -424,7 +424,6 @@ int main(int argc, char **argv){
 
 	// initialize leg positions
 	footInitialize();
-	ros::Duration(2).sleep();
 
 	while(ros::ok()){
 		ros::spinOnce();
