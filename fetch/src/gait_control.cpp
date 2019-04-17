@@ -96,6 +96,7 @@ public:
 	fetch::RhoThetaQArray rtq;
 	float k[4];
 	int state[4];
+	std::vector<int> legPattern;
 	int lastLeg, nextLeg;
 
 	int forwardLeg[2];
@@ -112,6 +113,7 @@ public:
 		chassisRho = defaultRho;
 		lastLeg = 0;
 		stability = stabMargin();
+		legPattern = {1,2,3,0};
 	}
 };
 
@@ -239,13 +241,18 @@ void footInitialize(){
 	brandon.rtq.rho = std::vector<float>();
 	brandon.rtq.theta = std::vector<float>();
 	brandon.rtq.q = std::vector<float>();
-	for (int i =0; i < 4; i++){
+	// intialize rtq
+	for (int i = 0; i < 4; i++){
 		brandon.rtq.rho.push_back(defaultRho);
 		brandon.rtq.theta.push_back(defaultTheta);
 		brandon.rtq.q.push_back(defaultQ);
 	}
-	brandon.rtq.q.at(0) = brandon.e[0].plus;
-	brandon.rtq.q.at(3) = brandon.e[3].plus;
+	// set initial phases
+	float strideLength = outerE + innerE;
+	for (int i = 0; i < 4; i++){
+		float phase = strideLength/(4-i);
+		brandon.rtq.q.at(brandon.legPattern.at(i)) = phase + brandon.e[brandon.legPattern.at(i)].minus;
+	}
 	brandon.lastLeg = 0;
 }
 
@@ -414,10 +421,6 @@ int main(int argc, char **argv){
 	// specify loop frequency, works with Rate::sleep to sleep for the correct time
     ros::Rate loop_rate(FREQ);
 
-	// declare leg pattern
-	// lastLeg		   {0,1,2,3}
-	int legPattern[] = {1,2,3,0};
-	
 	// initialize leg positions
 	footInitialize();
 	ros::Duration(2).sleep();
@@ -443,7 +446,7 @@ int main(int argc, char **argv){
 			// simply sets the pattern by looking at last leg to 'drop' and selecting a leg to lift based on that
 			if(enableLogging) ROS_INFO("GC:\t'phase' check\tlastLeg\t[%i]", brandon.lastLeg);
 
-			brandon.nextLeg = legPattern[brandon.lastLeg];
+			brandon.nextLeg = brandon.legPattern.at(brandon.lastLeg);
 			/*switch (brandon.lastLeg){
 				case 0:
 				brandon.nextLeg = 2;
