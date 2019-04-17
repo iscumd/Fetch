@@ -249,9 +249,10 @@ void footInitialize(){
 		brandon.state[i] = STRIDE;
 	}
 	// set initial phases
+	boundCalc();
 	float strideLength = outerE + innerE;
 	for (int i = 0; i < 4; i++){
-		float phase = strideLength/(4-i);
+		float phase = strideLength*i/3;
 		brandon.rtq.q.at(brandon.legPattern.at(i)) = phase + brandon.e[brandon.legPattern.at(i)].minus;
 	}
 	brandon.lastLeg = 0;
