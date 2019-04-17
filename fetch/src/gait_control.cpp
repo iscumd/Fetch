@@ -429,6 +429,8 @@ int main(int argc, char **argv){
 	while(ros::ok()){
 		ros::spinOnce();
 
+		if(enableLogging) ROS_INFO("GC:\tstability\tplus: %f\tminus: %f", stabilityCalc(-1,-1).plus, stabilityCalc(-1,-1).minus);
+
 		if (brandon.footSwitch.data.empty()) {
 			continue;
 		}
