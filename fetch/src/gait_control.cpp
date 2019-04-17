@@ -246,6 +246,7 @@ void footInitialize(){
 		brandon.rtq.rho.push_back(defaultRho);
 		brandon.rtq.theta.push_back(defaultTheta);
 		brandon.rtq.q.push_back(defaultQ);
+		brandon.state[i] = STRIDE;
 	}
 	// set initial phases
 	float strideLength = outerE + innerE;
@@ -445,22 +446,10 @@ int main(int argc, char **argv){
 			// ... 0,2,1,3 ...
 			// simply sets the pattern by looking at last leg to 'drop' and selecting a leg to lift based on that
 			if(enableLogging) ROS_INFO("GC:\t'phase' check\tlastLeg\t[%i]", brandon.lastLeg);
-
+			
+			// just moves onto the next leg
 			brandon.nextLeg = brandon.legPattern.at(brandon.lastLeg);
-			/*switch (brandon.lastLeg){
-				case 0:
-				brandon.nextLeg = 2;
-				break;
-				case 1:
-				brandon.nextLeg = 3;
-				break;
-				case 2:
-				brandon.nextLeg = 1;
-				break;
-				case 3:
-				brandon.nextLeg = 0;
-				break;
-			}*/
+
 			if(enableLogging) ROS_INFO("GC:\t'gait' check\tnextLeg\t[%i]", brandon.nextLeg);
 			
 			if(legCheck(brandon.nextLeg) == 0 && brandon.state[brandon.nextLeg] == STRIDE){ // only lift next leg if no other leg is lifted
