@@ -492,6 +492,9 @@ int main(int argc, char **argv){
 
 			};
 		};
+		
+		boundCalc();
+		
 		gaitPub.publish(brandon.rtq);
 
 		if(enableLogging) ROS_INFO("Execution time: [%f]", loop_rate.cycleTime().toSec());
