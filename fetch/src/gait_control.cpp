@@ -359,7 +359,7 @@ void drop(int leg){ //* state 2
 void stride(int leg){ //* state 3
 	if (brandon.footSwitch.data[leg] == false){
 		brandon.rtq.rho[leg] += 1;
-		ros::Duration(0.02).sleep();
+		//ros::Duration(0.02).sleep();
 	}
 	boundCalc();
 	
@@ -384,8 +384,8 @@ int main(int argc, char **argv){
 	n.param("servo_to_com", servoToCOM, 18.5);
 	n.param("min_chassis_rho", minRho, 12.0);
 	n.param("max_chassis_rho", maxRho, 30.0);
-	n.param("outer_e_bound", outerE, 15.0);
-	n.param("inner_e_bound", innerE, 10.0);
+	n.param("outer_e_bound", outerE, 10.0);
+	n.param("inner_e_bound", innerE, 8.0);
 	n.param("default_leg_rho", defaultRho, 20.0);
 	n.param("default_leg_theta", defaultTheta, 0.0);
 	n.param("default_leg_q", defaultQ, 0.0);
@@ -400,7 +400,6 @@ int main(int argc, char **argv){
 	n.param("right_roll_threshold", rightRollThresh, 30.0);
 	n.param("forward_pitch_threshold", forwardPitchThresh, 30.0);
 	n.param("backward_pitch_threshold", backwardPitchThresh, -30.0);
-	
 
 	// define topic name to publish to and queue size
 	gaitPub = n.advertise<fetch::RhoThetaQArray>("gait_control", 5);
@@ -414,6 +413,10 @@ int main(int argc, char **argv){
     
 	// specify loop frequency, works with Rate::sleep to sleep for the correct time
     ros::Rate loop_rate(FREQ);
+
+	// declare leg pattern
+	// lastLeg		   {0,1,2,3}
+	int legPattern[] = {1,2,3,0};
 	
 	// initialize leg positions
 	footInitialize();
@@ -439,7 +442,9 @@ int main(int argc, char **argv){
 			// ... 0,2,1,3 ...
 			// simply sets the pattern by looking at last leg to 'drop' and selecting a leg to lift based on that
 			if(enableLogging) ROS_INFO("GC:\t'phase' check\tlastLeg\t[%i]", brandon.lastLeg);
-			switch (brandon.lastLeg){
+
+			brandon.nextLeg = legPattern[brandon.lastLeg];
+			/*switch (brandon.lastLeg){
 				case 0:
 				brandon.nextLeg = 2;
 				break;
@@ -452,7 +457,7 @@ int main(int argc, char **argv){
 				case 3:
 				brandon.nextLeg = 0;
 				break;
-			}
+			}*/
 			if(enableLogging) ROS_INFO("GC:\t'gait' check\tnextLeg\t[%i]", brandon.nextLeg);
 			
 			if(legCheck(brandon.nextLeg) == 0 && brandon.state[brandon.nextLeg] == STRIDE){ // only lift next leg if no other leg is lifted
