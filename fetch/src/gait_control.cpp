@@ -378,7 +378,7 @@ void stride(int leg){ //* state 3
 	
 	brandon.rtq.q[leg] -= brandon.velocity.linear.x/FREQ;
 	brandon.k[leg] = abs(brandon.rtq.q[leg] - brandon.e[leg].reverse(brandon.velocity.linear.x));
-	if(brandon.k[leg] < 2 && legCheck(leg) == 0) {
+	if(brandon.k[leg] < 2 && legCheck(leg) == 0 && brandon.velocity.linear.x > 1) {
 		brandon.state[leg] = LIFT; // lift if you hit the very rear bound and no other legs are lifted
 		if(enableLogging) ROS_INFO("GC:\tstride is lifting leg\t[%i]", leg);
 	}
@@ -412,10 +412,10 @@ int main(int argc, char **argv){
 	n.param("forward_stability_threshold", stabilityThreshold, 5.0);
    
     //Pitch and Roll Thresholds.
-	n.param("left_roll_threshold", leftRollThresh, -30.0);
-	n.param("right_roll_threshold", rightRollThresh, 30.0);
-	n.param("forward_pitch_threshold", forwardPitchThresh, 30.0);
-	n.param("backward_pitch_threshold", backwardPitchThresh, -30.0);
+	n.param("left_roll_threshold", leftRollThresh, -5.0);
+	n.param("right_roll_threshold", rightRollThresh, 5.0);
+	n.param("forward_pitch_threshold", forwardPitchThresh, 5.0);
+	n.param("backward_pitch_threshold", backwardPitchThresh, -5.0);
 
 	// define topic name to publish to and queue size
 	gaitPub = n.advertise<fetch::RhoThetaQArray>("gait_control", 5);
@@ -425,7 +425,7 @@ int main(int argc, char **argv){
 	ros::Subscriber footSub = n.subscribe("foot_position", 5, footCallback);
 	ros::Subscriber eulerSub = n.subscribe("orientation_control", 5, orientationControlCallback);
 	ros::Subscriber manualControlSub = n.subscribe("manual_control", 5, manualControlCallback);
-	ros::Subscriber servoRecenterSub = n.subscribe("gait_control_reinitialize", 5, recenterCallback);
+	ros::Subscriber servoRecenterSub = n.subscribe("gait_control_reinitialize", 2, recenterCallback);
     
 	// specify loop frequency, works with Rate::sleep to sleep for the correct time
     ros::Rate loop_rate(FREQ);
