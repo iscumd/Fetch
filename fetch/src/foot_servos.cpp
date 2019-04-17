@@ -15,7 +15,8 @@ bool useOnboardPower;
 bool center_on_startup;
 int frequency_hz; //frequency to send pulses
 int number_of_channels = 8;
-std::vector<float> servo_angles;
+std::vector<float> servo_angles (number_of_channels, 0.0);
+bool initial_position_set = false;
 double lower_pulse_width_ms, upper_pulse_width_ms, lower_angle, upper_angle;
 
 int board_init(){
@@ -43,10 +44,9 @@ int board_init(){
 }
 
 void center_servos(){
-	servo_angles = std::vector<float>();
 	float midpoint_angle = (upper_angle+lower_angle)/2;
 	for(int i = 0; i < number_of_channels; i++){
-		servo_angles.push_back(midpoint_angle);
+		servo_angles.at(midpoint_angle);
 	}
 }
 
@@ -88,6 +88,7 @@ void servoAnglesCallback(const std_msgs::Float32MultiArray::ConstPtr& msg){
 		servo_angles.at(i) = *it;
 		i++;
 	}
+	initial_position_set = true;
 }
 
 void recenterCallback(const std_msgs::Bool::ConstPtr& msg){
@@ -112,6 +113,7 @@ int main(int argc, char **argv){
 
 	if (center_on_startup) {
 		center_servos();
+		initial_position_set = true;
 	}
 	ros::Subscriber servoAnglesSub = n.subscribe("leg_mapping", 5, servoAnglesCallback);
 	ros::Subscriber servoRecenterSub = n.subscribe("foot_servos_recenter", 5, recenterCallback);
@@ -123,8 +125,10 @@ int main(int argc, char **argv){
 	while(ros::ok()) {
 		ros::spinOnce();
 		
-		for(int i = 0; i < servo_angles.size(); i++){
-			move_servo(i+1, map(servo_angles.at(i),lower_angle, upper_angle, lower_pulse_width_ms, upper_pulse_width_ms));
+		if (initial_position_set) {
+			for(int i = 0; i < servo_angles.size(); i++){
+				move_servo(i+1, map(servo_angles.at(i),lower_angle, upper_angle, lower_pulse_width_ms, upper_pulse_width_ms));
+			}
 		}
 
 		loopRate.sleep();
