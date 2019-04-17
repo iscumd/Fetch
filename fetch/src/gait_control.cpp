@@ -149,6 +149,10 @@ void boundCalc(){
 		brandon.e[leg].plus = innerE;
 		brandon.e[leg].minus = -outerE;
 		}
+
+		// make sure q is an acceptable value after, limit it otherwise
+		if (brandon.rtq.q[leg] > brandon.e[leg].plus) brandon.rtq.q[leg] = brandon.e[leg].plus; // forward limit
+		if (brandon.rtq.q[leg] < brandon.e[leg].minus) brandon.rtq.q[leg] = brandon.e[leg].minus; // reverse limit
 	}
 }
 
