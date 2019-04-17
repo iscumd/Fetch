@@ -232,10 +232,10 @@ void heightAdjust(float height){
 		diff = height - avHeight;
 		if(enableLogging) ROS_INFO("GC:\theightAdjust\tdiff:\t[%f]\tdelta:\t[%f]", diff, diff / FREQ);
 
-		brandon.rtq.rho[0] += brandon.footSwitch.data[0] * diff / FREQ;
-		brandon.rtq.rho[1] += brandon.footSwitch.data[1] * diff / FREQ;
-		brandon.rtq.rho[2] += brandon.footSwitch.data[2] * diff / FREQ;
-		brandon.rtq.rho[3] += brandon.footSwitch.data[3] * diff / FREQ;
+		//brandon.rtq.rho[0] += brandon.footSwitch.data[0] * diff / FREQ;
+		//brandon.rtq.rho[1] += brandon.footSwitch.data[1] * diff / FREQ;
+		//brandon.rtq.rho[2] += brandon.footSwitch.data[2] * diff / FREQ;
+		//brandon.rtq.rho[3] += brandon.footSwitch.data[3] * diff / FREQ;
 		boundCalc();
 	}
 }
@@ -407,7 +407,7 @@ int main(int argc, char **argv){
 	n.param("default_leg_q", defaultQ, 0.0);
 	n.getParam("leg_boundaries", legBounds);
 	n.param("lift_velocity", liftVel, 20.0);
-	n.param("drop_velocity", dropVel, 30.0);
+	n.param("drop_velocity", dropVel, 40.0);
 	n.param("max_velocity", maxVel, 30.0);
 	n.param("forward_stability_threshold", stabilityThreshold, 5.0);
    
@@ -492,6 +492,8 @@ int main(int argc, char **argv){
 
 			};
 		};
+
+		heightAdjust(defaultRho);
 		
 		boundCalc();
 		
