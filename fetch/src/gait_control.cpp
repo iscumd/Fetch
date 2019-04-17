@@ -343,7 +343,7 @@ void swing(int leg, float liftHeight){ //* state 1
 
 	// ensure leg is pulled to the right point on either side, depending on direction
 	if (brandon.rtq.q[leg] < brandon.e[leg].forward(brandon.velocity.linear.x)){
-		brandon.rtq.q[leg] += 4*brandon.velocity.linear.x/FREQ;
+		brandon.rtq.q[leg] += 6*brandon.velocity.linear.x/FREQ;
 		//if(enableLogging) ROS_INFO("GC:\tswing state\tleg:\t[%i]\treached liftHeight: [%f]", leg, liftHeight);
 
 	}else
@@ -374,7 +374,10 @@ void stride(int leg){ //* state 3
 	
 	brandon.rtq.q[leg] -= brandon.velocity.linear.x/FREQ;
 	brandon.k[leg] = abs(brandon.rtq.q[leg] - brandon.e[leg].reverse(brandon.velocity.linear.x));
-	if(brandon.k[leg] < 2 && legCheck(leg) == 0) brandon.state[leg] = LIFT; // lift if you hit the very rear bound and no other legs are lifted
+	if(brandon.k[leg] < 2 && legCheck(leg) == 0) {
+		brandon.state[leg] = LIFT; // lift if you hit the very rear bound and no other legs are lifted
+		if(enableLogging) ROS_INFO("GC:\tstride is lifting leg\t[%i]", leg);
+	}
 }
 
 // ------------- Main ------------
@@ -399,9 +402,9 @@ int main(int argc, char **argv){
 	n.param("default_leg_theta", defaultTheta, 0.0);
 	n.param("default_leg_q", defaultQ, 0.0);
 	n.getParam("leg_boundaries", legBounds);
-	n.param("swing_velocity", liftVel, 20.0);
-	n.param("drop_velocity", dropVel, 20.0);
-	n.param("max_velocity", maxVel, 15.0);
+	n.param("lift_velocity", liftVel, 20.0);
+	n.param("drop_velocity", dropVel, 30.0);
+	n.param("max_velocity", maxVel, 30.0);
 	n.param("forward_stability_threshold", stabilityThreshold, 5.0);
    
     //Pitch and Roll Thresholds.
