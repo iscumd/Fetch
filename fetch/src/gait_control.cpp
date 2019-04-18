@@ -399,7 +399,7 @@ int main(int argc, char **argv){
 	n.param("max_chassis_rho", maxRho, 30.0);
 	n.param("outer_e_bound", outerE, 10.0);
 	n.param("inner_e_bound", innerE, 8.0);
-	n.param("default_leg_rho", defaultRho, 17.5);
+	n.param("default_leg_rho", defaultRho, 18.5);
 	n.param("default_leg_theta", defaultTheta, 0.0);
 	n.param("default_leg_q", defaultQ, 0.0);
 	n.getParam("leg_boundaries", legBounds);
