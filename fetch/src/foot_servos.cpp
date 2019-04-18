@@ -111,8 +111,8 @@ int main(int argc, char **argv){
 	n.param("foot_servos_pulse_frequency", frequency_hz, 50);
 	n.param("foot_servos_lower_pulse_width_ms", lower_pulse_width_ms, 0.9);
 	n.param("foot_servos_upper_pulse_width_ms", upper_pulse_width_ms, 2.1);
-	n.param("foot_servos_black_lower_pulse_width_ms", lower_pulse_width_ms_black, 2.455);
-	n.param("foot_servos_black_upper_pulse_width_ms", upper_pulse_width_ms_black, 0.553);
+	n.param("foot_servos_black_lower_pulse_width_ms", lower_pulse_width_ms_black, 2.358);
+	n.param("foot_servos_black_upper_pulse_width_ms", upper_pulse_width_ms_black, 0.642);
 	n.param("foot_servos_lower_angle", lower_angle, -90.0);
 	n.param("foot_servos_upper_angle", upper_angle, 90.0);
 
