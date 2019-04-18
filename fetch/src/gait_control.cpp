@@ -290,18 +290,18 @@ void orientationControlCallback(const fetch::OrientationRPY::ConstPtr& msg){
 	float xdir[4];
 	float ydir[4];
 
-	float chassisPitch = tanf(brandon.orientation.pitch*PI/180);
-	float chassisRoll = tanf(brandon.orientation.roll*PI/180);
+	float pitchError = tanf(brandon.orientation.pitch*PI/180);
+	float rollError = tanf(brandon.orientation.roll*PI/180);
 
-	xdir[0] =   chassisPitch * (servoToCOM + brandon.rtq.q[0]); // front left
-	xdir[1] =   chassisPitch * (servoToCOM + brandon.rtq.q[1]); // front right
-	xdir[2] = - chassisPitch * (servoToCOM + brandon.rtq.q[2]); // back left
-	xdir[3] = - chassisPitch * (servoToCOM + brandon.rtq.q[3]); // back right
+	xdir[0] =   pitchError * (servoToCOM + brandon.rtq.q[0]); // front left
+	xdir[1] =   pitchError * (servoToCOM + brandon.rtq.q[1]); // front right
+	xdir[2] = - pitchError * (servoToCOM + brandon.rtq.q[2]); // back left
+	xdir[3] = - pitchError * (servoToCOM + brandon.rtq.q[3]); // back right
 
-	ydir[0] = - chassisRoll * 14; // front left
-	ydir[1] =   chassisRoll * 14; // front right
-	ydir[2] = - chassisRoll * 14; // back left
-	ydir[3] =   chassisRoll * 14; // back right
+	ydir[0] = - rollError * 14; // front left
+	ydir[1] =   rollError * 14; // front right
+	ydir[2] = - rollError * 14; // back left
+	ydir[3] =   rollError * 14; // back right
 
 	for (int i = 0; i < 4; i++){
 		float deltaRho = brandon.footSwitch.data[0] * (xdir[i] + ydir[i]) / FREQ;
