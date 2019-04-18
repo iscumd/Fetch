@@ -131,7 +131,7 @@ int main(int argc, char **argv){
 		ros::spinOnce();
 		
 		if (initial_position_set) {
-			move_servo(1, map(servo_angles.at(1), lower_angle, upper_angle, lower_pulse_width_ms_black, upper_pulse_width_ms_black));
+			move_servo(1, map(servo_angles.at(0), lower_angle, upper_angle, lower_pulse_width_ms_black, upper_pulse_width_ms_black));
 			for(int i = 1; i < servo_angles.size(); i++){
 				move_servo(i+1, map(servo_angles.at(i), lower_angle, upper_angle, lower_pulse_width_ms, upper_pulse_width_ms));
 			}
