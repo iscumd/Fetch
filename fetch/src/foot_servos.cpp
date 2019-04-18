@@ -108,6 +108,8 @@ int main(int argc, char **argv){
 	n.param("foot_servos_pulse_frequency", frequency_hz, 50);
 	n.param("foot_servos_lower_pulse_width_ms", lower_pulse_width_ms, 0.9);
 	n.param("foot_servos_upper_pulse_width_ms", upper_pulse_width_ms, 2.1);
+	n.param("foot_servos_black_lower_pulse_width_ms", lower_pulse_width_ms_black, 0.553);
+	n.param("foot_servos_black_upper_pulse_width_ms", upper_pulse_width_ms_black, 2.455);
 	n.param("foot_servos_lower_angle", lower_angle, -90.0);
 	n.param("foot_servos_upper_angle", upper_angle, 90.0);
 
@@ -126,8 +128,9 @@ int main(int argc, char **argv){
 		ros::spinOnce();
 		
 		if (initial_position_set) {
-			for(int i = 0; i < servo_angles.size(); i++){
-				move_servo(i+1, map(servo_angles.at(i),lower_angle, upper_angle, lower_pulse_width_ms, upper_pulse_width_ms));
+			move_servo(1, map(servo_angles.at(i), lower_angle, upper_angle, lower_pulse_width_ms_black, upper_pulse_width_ms_black));
+			for(int i = 1; i < servo_angles.size(); i++){
+				move_servo(i+1, map(servo_angles.at(i), lower_angle, upper_angle, lower_pulse_width_ms, upper_pulse_width_ms));
 			}
 		}
 
