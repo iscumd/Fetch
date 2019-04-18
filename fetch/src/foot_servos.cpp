@@ -18,6 +18,7 @@ int number_of_channels = 8;
 std::vector<float> servo_angles (number_of_channels, 0.0);
 bool initial_position_set = false;
 double lower_pulse_width_ms, upper_pulse_width_ms, lower_angle, upper_angle;
+double lower_pulse_width_ms_black, upper_pulse_width_ms_black;
 
 int board_init(){
 	if (useOnboardPower) {
