@@ -298,15 +298,13 @@ void orientationControlCallback(const fetch::OrientationRPY::ConstPtr& msg){
 	xdir[2] = - pitchError * (servoToCOM + brandon.rtq.q[2]); // back left
 	xdir[3] = - pitchError * (servoToCOM + brandon.rtq.q[3]); // back right
 
-	/*
 	ydir[0] = - rollError * 14; // front left
 	ydir[1] =   rollError * 14; // front right
 	ydir[2] = - rollError * 14; // back left
 	ydir[3] =   rollError * 14; // back right
-	*/
 
 	for (int i = 0; i < 4; i++){
-		float deltaRho = brandon.footSwitch.data[0] * (xdir[i] /*+ ydir[i]*/) / FREQ;
+		float deltaRho = brandon.footSwitch.data[0] * (xdir[i] + ydir[i]) / FREQ;
 		brandon.rtq.rho[i] += deltaRho;
 		if(enableLogging) ROS_INFO("GC:\torientAdjust\tleg:\t[%i]\tdeltaRho:\t[%f]", i, deltaRho);
 	}
@@ -401,7 +399,7 @@ int main(int argc, char **argv){
 	n.param("max_chassis_rho", maxRho, 30.0);
 	n.param("outer_e_bound", outerE, 10.0);
 	n.param("inner_e_bound", innerE, 8.0);
-	n.param("default_leg_rho", defaultRho, 20.0);
+	n.param("default_leg_rho", defaultRho, 17.5);
 	n.param("default_leg_theta", defaultTheta, 0.0);
 	n.param("default_leg_q", defaultQ, 0.0);
 	n.getParam("leg_boundaries", legBounds);
