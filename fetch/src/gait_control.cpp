@@ -13,6 +13,7 @@
 #define SWING 1
 #define DROP 2
 #define STRIDE 3
+#define PI 3.14159265
 
 // -------- Variables --------
 
@@ -202,18 +203,6 @@ stabMargin stabilityCalc(int testLegLift, int testLegDrop){
 	return stab;
 };
 
-void orientAdjust(float xdir, float ydir){
-	//* set x/y dir as 0 if not adjusting in that direction
-	// note they are scaled to a lifting and dropping velocity (cm/sec)
-	// sign points to direction adjusting TO, not the way you are falling
-	//! + is right? - is left? ethan should confirm
-	brandon.rtq.rho[0] += brandon.footSwitch.data[0] * (-xdir - ydir)/FREQ;
-	brandon.rtq.rho[1] += brandon.footSwitch.data[1] * (-xdir + ydir)/FREQ;
-	brandon.rtq.rho[2] += brandon.footSwitch.data[2] * (xdir - ydir)/FREQ;
-	brandon.rtq.rho[3] += brandon.footSwitch.data[3] * (xdir + ydir)/FREQ;
-	if(enableLogging) ROS_INFO("GC:\torientAdjust\txdir:\t[%f]\tydir:\t[%f]", xdir, ydir);
-	boundCalc();
-}
 
 void heightAdjust(float height){
 	int legCount = 0;
@@ -230,7 +219,7 @@ void heightAdjust(float height){
 	}else{
 		avHeight = avHeight/legCount;
 		diff = height - avHeight;
-		if(enableLogging) ROS_INFO("GC:\theightAdjust\tdiff:\t[%f]\tdelta:\t[%f]", diff, diff / FREQ);
+		if(enableLogging) ROS_INFO("GC:\theightAdjust\tavHeight:\t[%f]\tdiff:\t[%f]\tdelta:\t[%f]", avHeight, diff / FREQ);
 
 		//brandon.rtq.rho[0] += brandon.footSwitch.data[0] * diff / FREQ;
 		//brandon.rtq.rho[1] += brandon.footSwitch.data[1] * diff / FREQ;
@@ -292,26 +281,34 @@ void orientationControlCallback(const fetch::OrientationRPY::ConstPtr& msg){
 	//Pitch should be no greater than |30 degrees| (absolute value)
 	//Roll should be no greater than 
 	brandon.orientation = *msg;
-	
-	if(brandon.orientation.pitch > forwardPitchThresh){
-		if(enableLogging) ROS_INFO("GC:\torientCB\tforwardPitchThresh exceeded:\tpitch:\t[%f]", brandon.orientation.pitch);
-		orientAdjust(-1,0); 
-	}
 
-	if(brandon.orientation.pitch < backwardPitchThresh){
-		if(enableLogging) ROS_INFO("GC:\torientCB\tbackwardPitchThresh exceeded:\tpitch:\t[%f]", brandon.orientation.pitch);
-		orientAdjust(1,0);
-	}
+	//* set x/y dir as 0 if not adjusting in that direction
+	// note they are scaled to a lifting and dropping velocity (cm/sec)
+	// sign points to direction adjusting TO, not the way you are falling
+	//left is negative right is positive
+	//forward is positive backwards is negative
+	float xdir[4];
+	float ydir[4];
 
-	if(brandon.orientation.roll < leftRollThresh){
-		if(enableLogging) ROS_INFO("GC:\torientCB\tleftRollThresh exceeded:\troll:\t[%f]", brandon.orientation.roll);
-		orientAdjust(0,1);
-	}
+	float chassisPitch = tanf(brandon.orientation.pitch*PI/180);
+	float chassisRoll = tanf(brandon.orientation.roll*PI/180);
 
-	if(brandon.orientation.roll > rightRollThresh){
-		if(enableLogging) ROS_INFO("GC:\torientCB\trightRollThresh exceeded:\troll:\t[%f]", brandon.orientation.roll);
-		orientAdjust(0,-1); 
+	xdir[0] =   chassisPitch * (servoToCOM + brandon.rtq.q[0]); // front left
+	xdir[1] =   chassisPitch * (servoToCOM + brandon.rtq.q[1]); // front right
+	xdir[2] = - chassisPitch * (servoToCOM + brandon.rtq.q[2]); // back left
+	xdir[3] = - chassisPitch * (servoToCOM + brandon.rtq.q[3]); // back right
+
+	ydir[0] = - chassisRoll * 14; // front left
+	ydir[1] =   chassisRoll * 14; // front right
+	ydir[2] = - chassisRoll * 14; // back left
+	ydir[3] =   chassisRoll * 14; // back right
+
+	for (int i = 0; i < 4; i++){
+		float deltaRho = brandon.footSwitch.data[0] * (xdir[i] + ydir[i]) / FREQ;
+		brandon.rtq.rho[i] += deltaRho;
+		if(enableLogging) ROS_INFO("GC:\torientAdjust\tleg:\t[%i]\tdeltaRho:\t[%f]", i, deltaRho);
 	}
+	boundCalc();
 }
 
 void recenterCallback(const std_msgs::Bool::ConstPtr& msg){
