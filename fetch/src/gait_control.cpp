@@ -219,7 +219,7 @@ void heightAdjust(float height){
 	}else{
 		avHeight = avHeight/legCount;
 		diff = height - avHeight;
-		if(enableLogging) ROS_INFO("GC:\theightAdjust\tavHeight:\t[%f]\tdiff:\t[%f]\tdelta:\t[%f]", avHeight, diff / FREQ);
+		if(enableLogging) ROS_INFO("GC:\theightAdjust\tavHeight:\t[%f]\tdiff:\t[%f]\tdelta:\t[%f]", avHeight, diff, diff / FREQ);
 
 		//brandon.rtq.rho[0] += brandon.footSwitch.data[0] * diff / FREQ;
 		//brandon.rtq.rho[1] += brandon.footSwitch.data[1] * diff / FREQ;
