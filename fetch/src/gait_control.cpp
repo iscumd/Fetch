@@ -221,10 +221,10 @@ void heightAdjust(float height){
 		diff = height - avHeight;
 		if(enableLogging) ROS_INFO("GC:\theightAdjust\tavHeight:\t[%f]\tdiff:\t[%f]\tdelta:\t[%f]", avHeight, diff, diff / FREQ);
 
-		//brandon.rtq.rho[0] += brandon.footSwitch.data[0] * diff / FREQ;
-		//brandon.rtq.rho[1] += brandon.footSwitch.data[1] * diff / FREQ;
-		//brandon.rtq.rho[2] += brandon.footSwitch.data[2] * diff / FREQ;
-		//brandon.rtq.rho[3] += brandon.footSwitch.data[3] * diff / FREQ;
+		brandon.rtq.rho[0] += brandon.footSwitch.data[0] * diff / FREQ;
+		brandon.rtq.rho[1] += brandon.footSwitch.data[1] * diff / FREQ;
+		brandon.rtq.rho[2] += brandon.footSwitch.data[2] * diff / FREQ;
+		brandon.rtq.rho[3] += brandon.footSwitch.data[3] * diff / FREQ;
 		boundCalc();
 	}
 }
