@@ -234,14 +234,14 @@ void footInitialize(){
 	brandon.rtq.rho = std::vector<float>();
 	brandon.rtq.theta = std::vector<float>();
 	brandon.rtq.q = std::vector<float>();
-	// intialize rtq
+	if(enableLogging) ROS_INFO("Initialize rtq");
 	for (int i = 0; i < 4; i++){
 		brandon.rtq.rho.push_back(defaultRho);
 		brandon.rtq.theta.push_back(defaultTheta);
 		brandon.rtq.q.push_back(defaultQ);
 		brandon.state[i] = STRIDE;
 	}
-	// set initial phases
+	if(enableLogging) ROS_INFO("Set initial phases");
 	boundCalc();
 	float strideLength = outerE + innerE;
 	for (int i = 0; i < 4; i++){
@@ -249,7 +249,9 @@ void footInitialize(){
 		brandon.rtq.q.at(brandon.legPattern.at(i)) = phase + brandon.e[brandon.legPattern.at(i)].minus;
 	}
 	brandon.lastLeg = 0;
+	if(enableLogging) ROS_INFO("Publish initial position");
 	gaitPub.publish(brandon.rtq);
+	if(enableLogging) ROS_INFO("Sleeping...");
 	ros::Duration(3).sleep();
 }
 
@@ -399,7 +401,7 @@ int main(int argc, char **argv){
 	n.param("max_chassis_rho", maxRho, 30.0);
 	n.param("outer_e_bound", outerE, 10.0);
 	n.param("inner_e_bound", innerE, 8.0);
-	n.param("default_leg_rho", defaultRho, 18.5);
+	n.param("default_leg_rho", defaultRho, 16.5);
 	n.param("default_leg_theta", defaultTheta, 0.0);
 	n.param("default_leg_q", defaultQ, 0.0);
 	n.getParam("leg_boundaries", legBounds);
